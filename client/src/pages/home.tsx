@@ -38,7 +38,7 @@ export default function Home() {
 
   const addNodeMutation = useMutation({
     mutationFn: async (node: { node_id: string; display_name: string; description: string; node_type: string }) => {
-      return apiRequest('/api/nodes', { method: 'POST', body: JSON.stringify(node) });
+      return apiRequest('POST', '/api/nodes', node);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
@@ -52,7 +52,7 @@ export default function Home() {
 
   const updateNodeMutation = useMutation({
     mutationFn: async ({ nodeId, updates }: { nodeId: string; updates: { display_name?: string; description?: string } }) => {
-      return apiRequest(`/api/nodes/${encodeURIComponent(nodeId)}`, { method: 'PATCH', body: JSON.stringify(updates) });
+      return apiRequest('PATCH', `/api/nodes/${encodeURIComponent(nodeId)}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
@@ -67,7 +67,7 @@ export default function Home() {
 
   const deleteNodeMutation = useMutation({
     mutationFn: async (nodeId: string) => {
-      return apiRequest(`/api/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/nodes/${encodeURIComponent(nodeId)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
@@ -82,7 +82,7 @@ export default function Home() {
 
   const addEdgeMutation = useMutation({
     mutationFn: async (edge: { source_node: string; target_node: string; relationship_type: string; weight?: number }) => {
-      return apiRequest('/api/edges', { method: 'POST', body: JSON.stringify(edge) });
+      return apiRequest('POST', '/api/edges', edge);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
@@ -96,7 +96,7 @@ export default function Home() {
 
   const deleteEdgeMutation = useMutation({
     mutationFn: async ({ source_node, target_node }: { source_node: string; target_node: string }) => {
-      return apiRequest(`/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}`, { method: 'DELETE' });
+      return apiRequest('DELETE', `/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
