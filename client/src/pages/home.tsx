@@ -95,8 +95,8 @@ export default function Home() {
   });
 
   const deleteEdgeMutation = useMutation({
-    mutationFn: async ({ source_node, target_node }: { source_node: string; target_node: string }) => {
-      return apiRequest('DELETE', `/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}`);
+    mutationFn: async ({ source_node, target_node, relationship_type }: { source_node: string; target_node: string; relationship_type: string }) => {
+      return apiRequest('DELETE', `/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}&relationship_type=${encodeURIComponent(relationship_type)}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
@@ -151,7 +151,7 @@ export default function Home() {
       deleteNodeMutation.mutate((deleteTarget.item as GraphNode).node_id);
     } else {
       const edge = deleteTarget.item as GraphEdge;
-      deleteEdgeMutation.mutate({ source_node: edge.source_node, target_node: edge.target_node });
+      deleteEdgeMutation.mutate({ source_node: edge.source_node, target_node: edge.target_node, relationship_type: edge.relationship_type });
     }
   };
 

@@ -107,11 +107,15 @@ export async function registerRoutes(
 
   app.delete("/api/edges", (req, res) => {
     try {
-      const { source_node, target_node } = req.query;
+      const { source_node, target_node, relationship_type } = req.query;
       if (!source_node || !target_node) {
         return res.status(400).json({ error: "source_node and target_node are required" });
       }
-      const deleted = storage.deleteEdge(source_node as string, target_node as string);
+      const deleted = storage.deleteEdge(
+        source_node as string, 
+        target_node as string,
+        relationship_type as string | undefined
+      );
       if (!deleted) {
         return res.status(404).json({ error: "Edge not found" });
       }

@@ -13,7 +13,7 @@ export interface IStorage {
   updateNode(nodeId: string, node: Partial<InsertNode>): GraphNode | undefined;
   deleteNode(nodeId: string): boolean;
   createEdge(edge: InsertEdge): GraphEdge;
-  deleteEdge(sourceNode: string, targetNode: string): boolean;
+  deleteEdge(sourceNode: string, targetNode: string, relationshipType?: string): boolean;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -141,12 +141,20 @@ export class SQLiteStorage implements IStorage {
     return { ...edge, weight: edge.weight || 1, timestamp };
   }
 
-  deleteEdge(sourceNode: string, targetNode: string): boolean {
-    const stmt = this.db.prepare(
-      'DELETE FROM edges WHERE source_node = ? AND target_node = ?'
-    );
-    const result = stmt.run(sourceNode, targetNode);
-    return result.changes > 0;
+  deleteEdge(sourceNode: string, targetNode: string, relationshipType?: string): boolean {
+    if (relationshipType) {
+      const stmt = this.db.prepare(
+        'DELETE FROM edges WHERE source_node = ? AND target_node = ? AND relationship_type = ?'
+      );
+      const result = stmt.run(sourceNode, targetNode, relationshipType);
+      return result.changes > 0;
+    } else {
+      const stmt = this.db.prepare(
+        'DELETE FROM edges WHERE source_node = ? AND target_node = ?'
+      );
+      const result = stmt.run(sourceNode, targetNode);
+      return result.changes > 0;
+    }
   }
 }
 
