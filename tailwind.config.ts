@@ -86,6 +86,8 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        display: ["Oxanium", "sans-serif"],
+        tech: ["Space Mono", "monospace"],
       },
       keyframes: {
         "accordion-down": {
