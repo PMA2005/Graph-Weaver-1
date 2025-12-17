@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
-import { Suspense, useState, useRef } from 'react';
+import { OrbitControls, Stars, PerspectiveCamera, Html, Text } from '@react-three/drei';
+import { Suspense, useState, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 
 interface GraphNode {
@@ -30,6 +30,12 @@ const NODE_TYPE_COLORS: Record<string, string> = {
   default: '#ff6b35',
 };
 
+const NODE_TYPE_LABELS: Record<string, string> = {
+  person: 'Person',
+  project: 'Project',
+  default: 'Node',
+};
+
 const NODE_TYPE_SHAPES: Record<string, 'sphere' | 'box' | 'octahedron'> = {
   person: 'sphere',
   project: 'box',
@@ -40,13 +46,25 @@ function calculateNodePositions(nodes: GraphNode[], edges: GraphEdge[]) {
   const positions: Record<string, [number, number, number]> = {};
   const nodeCount = nodes.length;
   
-  nodes.forEach((node, index) => {
-    const angle = (index / nodeCount) * Math.PI * 2;
-    const radius = 5 + Math.random() * 3;
-    const height = (Math.random() - 0.5) * 4;
+  const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
+  const people = nodes.filter(n => n.node_type.toLowerCase() === 'person');
+  
+  projects.forEach((node, index) => {
+    const angle = (index / projects.length) * Math.PI * 2;
+    const radius = 3;
     positions[node.node_id] = [
       Math.cos(angle) * radius,
-      height,
+      2,
+      Math.sin(angle) * radius
+    ];
+  });
+  
+  people.forEach((node, index) => {
+    const angle = (index / people.length) * Math.PI * 2 + 0.3;
+    const radius = 7;
+    positions[node.node_id] = [
+      Math.cos(angle) * radius,
+      -1 + (index % 3) * 0.5,
       Math.sin(angle) * radius
     ];
   });
@@ -71,6 +89,7 @@ function Node3D({
   const [hovered, setHovered] = useState(false);
   
   const color = NODE_TYPE_COLORS[node.node_type.toLowerCase()] || NODE_TYPE_COLORS.default;
+  const typeLabel = NODE_TYPE_LABELS[node.node_type.toLowerCase()] || NODE_TYPE_LABELS.default;
   const shape = NODE_TYPE_SHAPES[node.node_type.toLowerCase()] || NODE_TYPE_SHAPES.default;
   const scale = isSelected ? 1.3 : hovered ? 1.15 : 1;
   const opacity = isSelected || isConnected ? 1 : (hovered ? 0.9 : 0.7);
@@ -99,6 +118,7 @@ function Node3D({
           opacity={opacity}
         />
       </mesh>
+      
       {(isSelected || hovered) && (
         <mesh scale={1.5}>
           {geometry}
@@ -110,7 +130,68 @@ function Node3D({
           />
         </mesh>
       )}
+      
+      <Html
+        position={[0, 0.8, 0]}
+        center
+        distanceFactor={10}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div 
+          className="text-center whitespace-nowrap select-none"
+          style={{ 
+            transform: 'translateX(-50%)',
+            textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6)'
+          }}
+        >
+          <div 
+            className="font-display text-sm font-bold"
+            style={{ color: color }}
+          >
+            {node.display_name}
+          </div>
+          <div 
+            className="font-tech text-xs opacity-70"
+            style={{ color: color }}
+          >
+            {typeLabel}
+          </div>
+        </div>
+      </Html>
     </group>
+  );
+}
+
+function EdgeLabel({
+  position,
+  relationshipType,
+  isHighlighted,
+}: {
+  position: [number, number, number];
+  relationshipType: string;
+  isHighlighted: boolean;
+}) {
+  const formattedLabel = relationshipType.replace(/_/g, ' ');
+  
+  return (
+    <Html
+      position={position}
+      center
+      distanceFactor={12}
+      style={{ pointerEvents: 'none' }}
+    >
+      <div 
+        className="font-tech text-xs px-2 py-0.5 rounded whitespace-nowrap select-none"
+        style={{ 
+          background: isHighlighted ? 'rgba(0, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.5)',
+          color: isHighlighted ? '#00ffff' : 'rgba(0, 255, 255, 0.6)',
+          border: `1px solid ${isHighlighted ? 'rgba(0, 255, 255, 0.5)' : 'rgba(0, 255, 255, 0.2)'}`,
+          textShadow: '0 0 5px rgba(0,0,0,0.8)',
+        }}
+      >
+        {formattedLabel}
+      </div>
+    </Html>
   );
 }
 
@@ -118,24 +199,45 @@ function Edge3D({
   start, 
   end, 
   isHighlighted,
+  relationshipType,
 }: { 
   start: [number, number, number]; 
   end: [number, number, number];
   isHighlighted: boolean;
+  relationshipType: string;
 }) {
-  const points = [
-    new THREE.Vector3(...start),
-    new THREE.Vector3(...end)
+  const lineObject = useMemo(() => {
+    const points = [
+      new THREE.Vector3(...start),
+      new THREE.Vector3(...end)
+    ];
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: '#00ffff',
+      transparent: true,
+      opacity: isHighlighted ? 0.8 : 0.25,
+    });
+    return new THREE.Line(lineGeometry, lineMaterial);
+  }, [start, end, isHighlighted]);
+  
+  const midPoint: [number, number, number] = [
+    (start[0] + end[0]) / 2,
+    (start[1] + end[1]) / 2 + 0.3,
+    (start[2] + end[2]) / 2
   ];
   
-  const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-  const lineMaterial = new THREE.LineBasicMaterial({
-    color: '#00ffff',
-    transparent: true,
-    opacity: isHighlighted ? 0.8 : 0.25,
-  });
-  
-  return <primitive object={new THREE.Line(lineGeometry, lineMaterial)} />;
+  return (
+    <group>
+      <primitive object={lineObject} />
+      {isHighlighted && (
+        <EdgeLabel 
+          position={midPoint}
+          relationshipType={relationshipType}
+          isHighlighted={isHighlighted}
+        />
+      )}
+    </group>
+  );
 }
 
 function Scene({ 
@@ -144,7 +246,7 @@ function Scene({
   selectedNode, 
   onNodeSelect 
 }: Graph3DCanvasProps) {
-  const positions = calculateNodePositions(nodes, edges);
+  const positions = useMemo(() => calculateNodePositions(nodes, edges), [nodes, edges]);
   
   const connectedNodeIds = new Set<string>();
   if (selectedNode) {
@@ -199,6 +301,7 @@ function Scene({
             start={startPos}
             end={endPos}
             isHighlighted={!!isHighlighted}
+            relationshipType={edge.relationship_type}
           />
         );
       })}
