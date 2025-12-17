@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -31,6 +32,7 @@ const RELATIONSHIP_TYPES = [
   { value: 'consults_on', label: 'Consults On', description: 'Person consults on project' },
   { value: 'manages', label: 'Manages', description: 'Person manages project or team' },
   { value: 'reports_to', label: 'Reports To', description: 'Person reports to another person' },
+  { value: 'custom', label: 'Custom...', description: 'Define your own relationship type' },
 ];
 
 export default function AddEdgeModal({ 
@@ -43,18 +45,27 @@ export default function AddEdgeModal({
   const [sourceNode, setSourceNode] = useState(preselectedSource || '');
   const [targetNode, setTargetNode] = useState('');
   const [relationshipType, setRelationshipType] = useState('assigned_to');
+  const [customRelationship, setCustomRelationship] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!sourceNode || !targetNode || sourceNode === targetNode) return;
     
+    const finalRelationshipType = relationshipType === 'custom' 
+      ? customRelationship.trim().toLowerCase().replace(/\s+/g, '_') 
+      : relationshipType;
+    
+    if (relationshipType === 'custom' && !customRelationship.trim()) return;
+    
     onSubmit({
       source_node: sourceNode,
       target_node: targetNode,
-      relationship_type: relationshipType,
+      relationship_type: finalRelationshipType,
       weight: 1,
     });
   };
+  
+  const isCustom = relationshipType === 'custom';
 
   const people = nodes.filter(n => n.node_type.toLowerCase() === 'person');
   const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
@@ -153,6 +164,22 @@ export default function AddEdgeModal({
               </SelectContent>
             </Select>
           </div>
+          
+          {isCustom && (
+            <div className="space-y-2">
+              <Label className="text-cyan-400 font-tech text-xs uppercase">Custom Relationship Name</Label>
+              <Input
+                value={customRelationship}
+                onChange={(e) => setCustomRelationship(e.target.value)}
+                placeholder="e.g., mentors, assists, supervises"
+                className="bg-black/30 border-cyan-500/30 text-white"
+                data-testid="input-custom-relationship"
+              />
+              <p className="text-xs text-gray-500">
+                Will be saved as: {customRelationship.trim().toLowerCase().replace(/\s+/g, '_') || 'your_relationship'}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-cyan-400 font-tech text-xs uppercase">To</Label>
@@ -192,7 +219,7 @@ export default function AddEdgeModal({
             </Button>
             <Button
               type="submit"
-              disabled={!sourceNode || !targetNode || sourceNode === targetNode || isLoading}
+              disabled={!sourceNode || !targetNode || sourceNode === targetNode || isLoading || (isCustom && !customRelationship.trim())}
               className="flex-1 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
               data-testid="button-confirm-edge"
             >
