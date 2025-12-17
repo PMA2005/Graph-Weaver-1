@@ -335,7 +335,7 @@ export default function Graph3DCanvas({
       data-testid="canvas-3d-graph"
     >
       <Canvas
-        onClick={() => onNodeSelect(null)}
+        onPointerMissed={() => onNodeSelect(null)}
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={null}>
