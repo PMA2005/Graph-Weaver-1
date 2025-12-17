@@ -1,32 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import Graph3DCanvas from '@/components/Graph3DCanvas';
 import NodeDetailsSidebar from '@/components/NodeDetailsSidebar';
 import GraphLegend from '@/components/GraphLegend';
 import TopNavigation from '@/components/TopNavigation';
 import HelpOverlay from '@/components/HelpOverlay';
 import LoadingScreen from '@/components/LoadingScreen';
+import AddNodeModal from '@/components/AddNodeModal';
+import EditNodeModal from '@/components/EditNodeModal';
+import AddEdgeModal from '@/components/AddEdgeModal';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useToast } from '@/hooks/use-toast';
-import type { GraphData } from '@shared/schema';
-
-interface GraphNode {
-  node_id: string;
-  display_name: string;
-  description: string;
-  node_type: string;
-}
-
-interface GraphEdge {
-  source_node: string;
-  target_node: string;
-  relationship_type: string;
-  weight?: number;
-}
+import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
 export default function Home() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [showAddNode, setShowAddNode] = useState(false);
+  const [showEditNode, setShowEditNode] = useState(false);
+  const [showAddEdge, setShowAddEdge] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
   const { toast } = useToast();
 
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
@@ -40,6 +35,78 @@ export default function Home() {
       localStorage.setItem('graphVisitorHelp', 'true');
     }
   }, []);
+
+  const addNodeMutation = useMutation({
+    mutationFn: async (node: { node_id: string; display_name: string; description: string; node_type: string }) => {
+      return apiRequest('/api/nodes', { method: 'POST', body: JSON.stringify(node) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setShowAddNode(false);
+      toast({ title: 'Success', description: 'Node added successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to add node', variant: 'destructive' });
+    },
+  });
+
+  const updateNodeMutation = useMutation({
+    mutationFn: async ({ nodeId, updates }: { nodeId: string; updates: { display_name?: string; description?: string } }) => {
+      return apiRequest(`/api/nodes/${encodeURIComponent(nodeId)}`, { method: 'PATCH', body: JSON.stringify(updates) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setShowEditNode(false);
+      setSelectedNode(null);
+      toast({ title: 'Success', description: 'Node updated successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update node', variant: 'destructive' });
+    },
+  });
+
+  const deleteNodeMutation = useMutation({
+    mutationFn: async (nodeId: string) => {
+      return apiRequest(`/api/nodes/${encodeURIComponent(nodeId)}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setDeleteTarget(null);
+      setSelectedNode(null);
+      toast({ title: 'Success', description: 'Node deleted successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to delete node', variant: 'destructive' });
+    },
+  });
+
+  const addEdgeMutation = useMutation({
+    mutationFn: async (edge: { source_node: string; target_node: string; relationship_type: string; weight?: number }) => {
+      return apiRequest('/api/edges', { method: 'POST', body: JSON.stringify(edge) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setShowAddEdge(false);
+      toast({ title: 'Success', description: 'Relationship created successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to create relationship', variant: 'destructive' });
+    },
+  });
+
+  const deleteEdgeMutation = useMutation({
+    mutationFn: async ({ source_node, target_node }: { source_node: string; target_node: string }) => {
+      return apiRequest(`/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setDeleteTarget(null);
+      toast({ title: 'Success', description: 'Relationship removed successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to remove relationship', variant: 'destructive' });
+    },
+  });
 
   const nodes: GraphNode[] = graphData?.nodes || [];
   const edges: GraphEdge[] = graphData?.edges || [];
@@ -66,19 +133,26 @@ export default function Home() {
   };
 
   const handleExport = () => {
-    toast({ title: 'Export', description: 'Export functionality coming soon' });
+    const dataStr = JSON.stringify(graphData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'graph-data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Exported', description: 'Graph data exported as JSON' });
   };
 
-  const handleEdit = () => {
-    toast({ title: 'Edit Mode', description: 'Editing capabilities coming in next update' });
-  };
-
-  const handleDelete = () => {
-    toast({ 
-      title: 'Delete Node', 
-      description: 'Are you sure? This action cannot be undone.',
-      variant: 'destructive'
-    });
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    
+    if (deleteTarget.type === 'node') {
+      deleteNodeMutation.mutate((deleteTarget.item as GraphNode).node_id);
+    } else {
+      const edge = deleteTarget.item as GraphEdge;
+      deleteEdgeMutation.mutate({ source_node: edge.source_node, target_node: edge.target_node });
+    }
   };
 
   if (isLoading) {
@@ -104,6 +178,7 @@ export default function Home() {
         onExport={handleExport}
         onHelp={() => setShowHelp(true)}
         onSettings={() => toast({ title: 'Settings', description: 'Settings panel coming soon' })}
+        onAddNode={() => setShowAddNode(true)}
       />
 
       <div className="absolute inset-0 pt-16 pb-20">
@@ -122,8 +197,10 @@ export default function Home() {
           allNodes={nodes}
           onClose={() => setSelectedNode(null)}
           onNodeNavigate={(node) => setSelectedNode(node)}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={() => setShowEditNode(true)}
+          onDelete={() => setDeleteTarget({ type: 'node', item: selectedNode })}
+          onAddRelationship={() => setShowAddEdge(true)}
+          onRemoveRelationship={(edge) => setDeleteTarget({ type: 'edge', item: edge })}
         />
       )}
 
@@ -134,6 +211,52 @@ export default function Home() {
 
       {showHelp && (
         <HelpOverlay onClose={() => setShowHelp(false)} />
+      )}
+
+      {showAddNode && (
+        <AddNodeModal
+          onClose={() => setShowAddNode(false)}
+          onSubmit={(node) => addNodeMutation.mutate(node)}
+          isLoading={addNodeMutation.isPending}
+        />
+      )}
+
+      {showEditNode && selectedNode && (
+        <EditNodeModal
+          node={selectedNode}
+          onClose={() => setShowEditNode(false)}
+          onSubmit={(nodeId, updates) => updateNodeMutation.mutate({ nodeId, updates })}
+          isLoading={updateNodeMutation.isPending}
+        />
+      )}
+
+      {showAddEdge && (
+        <AddEdgeModal
+          nodes={nodes}
+          onClose={() => setShowAddEdge(false)}
+          onSubmit={(edge) => addEdgeMutation.mutate(edge)}
+          isLoading={addEdgeMutation.isPending}
+          preselectedSource={selectedNode?.node_id}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={deleteTarget.type === 'node' ? 'Delete Node' : 'Remove Relationship'}
+          message={
+            deleteTarget.type === 'node'
+              ? 'This will permanently delete this node and all its relationships. This action cannot be undone.'
+              : 'This will remove the relationship between these two nodes.'
+          }
+          itemName={
+            deleteTarget.type === 'node'
+              ? (deleteTarget.item as GraphNode).display_name
+              : `${(deleteTarget.item as GraphEdge).source_node} → ${(deleteTarget.item as GraphEdge).target_node}`
+          }
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+          isLoading={deleteNodeMutation.isPending || deleteEdgeMutation.isPending}
+        />
       )}
     </div>
   );

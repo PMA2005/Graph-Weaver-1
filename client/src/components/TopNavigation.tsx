@@ -1,4 +1,4 @@
-import { RotateCcw, ZoomIn, ZoomOut, Download, Settings, HelpCircle, Network } from 'lucide-react';
+import { RotateCcw, Download, Settings, HelpCircle, Network, Plus, User, Folder } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -11,6 +11,7 @@ interface TopNavigationProps {
   onExport?: () => void;
   onHelp?: () => void;
   onSettings?: () => void;
+  onAddNode?: () => void;
 }
 
 export default function TopNavigation({
@@ -18,6 +19,7 @@ export default function TopNavigation({
   onExport,
   onHelp,
   onSettings,
+  onAddNode,
 }: TopNavigationProps) {
   return (
     <header 
@@ -53,6 +55,17 @@ export default function TopNavigation({
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          onClick={onAddNode}
+          className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
+          data-testid="button-add-node"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Node
+        </Button>
+
+        <div className="w-px h-6 bg-cyan-500/30 mx-2" />
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
