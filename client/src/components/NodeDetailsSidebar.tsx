@@ -40,6 +40,19 @@ const NODE_TYPE_ICONS: Record<string, typeof User> = {
   project: Folder,
 };
 
+const RELATIONSHIP_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  assigned_to: { bg: 'bg-green-500/15', text: 'text-green-400', border: 'border-green-500/30' },
+  collaborates_with: { bg: 'bg-blue-500/15', text: 'text-blue-400', border: 'border-blue-500/30' },
+  consults_on: { bg: 'bg-yellow-500/15', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  manages: { bg: 'bg-orange-500/15', text: 'text-orange-400', border: 'border-orange-500/30' },
+  reports_to: { bg: 'bg-pink-500/15', text: 'text-pink-400', border: 'border-pink-500/30' },
+  default: { bg: 'bg-gray-500/15', text: 'text-gray-400', border: 'border-gray-500/30' },
+};
+
+function getRelationshipStyle(type: string) {
+  return RELATIONSHIP_COLORS[type] || RELATIONSHIP_COLORS.default;
+}
+
 export default function NodeDetailsSidebar({
   node,
   edges,
@@ -99,9 +112,9 @@ export default function NodeDetailsSidebar({
       <div 
         className="h-full rounded-lg border border-cyan-500/30 overflow-hidden flex flex-col"
         style={{
-          background: 'rgba(20, 24, 59, 0.85)',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 0 30px rgba(0, 255, 255, 0.15)',
+          background: 'rgba(10, 14, 39, 0.75)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 0 30px rgba(0, 255, 255, 0.1)',
         }}
       >
         <div className="p-4 border-b border-cyan-500/20 flex items-start justify-between gap-3 shrink-0">
@@ -280,23 +293,41 @@ export default function NodeDetailsSidebar({
                   connections.map((conn, i) => {
                     const ConnIcon = NODE_TYPE_ICONS[conn.connectedNode!.node_type.toLowerCase()] || User;
                     const isOutgoing = conn.direction === 'outgoing';
+                    const relStyle = getRelationshipStyle(conn.edge.relationship_type);
                     return (
-                      <button
+                      <div
                         key={i}
-                        onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-all text-left group"
-                        data-testid={`button-connection-${i}`}
+                        className={`flex items-center justify-between p-2 rounded-lg border ${relStyle.bg} ${relStyle.border}`}
                       >
-                        <ConnIcon className="w-3 h-3 text-gray-500" />
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          {isOutgoing ? '' : <ArrowRight className="w-3 h-3 rotate-180" />}
-                          {conn.edge.relationship_type.replace(/_/g, ' ')}
-                          {isOutgoing ? <ArrowRight className="w-3 h-3" /> : ''}
-                        </span>
-                        <span className="text-sm text-gray-300 group-hover:text-white truncate">
-                          {conn.connectedNode!.display_name}
-                        </span>
-                      </button>
+                        <button
+                          onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
+                          className="flex items-center gap-2 text-left group flex-1 min-w-0"
+                          data-testid={`button-connection-${i}`}
+                        >
+                          <ConnIcon className={`w-4 h-4 shrink-0 ${relStyle.text}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-white truncate group-hover:text-cyan-300">
+                              {conn.connectedNode!.display_name}
+                            </p>
+                            <p className={`text-xs ${relStyle.text} flex items-center gap-1`}>
+                              {isOutgoing ? '' : <ArrowRight className="w-3 h-3 rotate-180" />}
+                              {conn.edge.relationship_type.replace(/_/g, ' ')}
+                              {isOutgoing ? <ArrowRight className="w-3 h-3" /> : ''}
+                            </p>
+                          </div>
+                        </button>
+                        {onRemoveRelationship && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onRemoveRelationship(conn.edge)}
+                            className="h-6 w-6 text-gray-500 hover:text-red-400 shrink-0"
+                            data-testid={`button-remove-connection-${i}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
                     );
                   })
                 )}

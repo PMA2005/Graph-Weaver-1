@@ -42,6 +42,19 @@ const NODE_TYPE_SHAPES: Record<string, 'sphere' | 'box' | 'octahedron'> = {
   default: 'sphere',
 };
 
+const RELATIONSHIP_COLORS: Record<string, string> = {
+  assigned_to: '#22c55e',
+  collaborates_with: '#3b82f6',
+  consults_on: '#eab308',
+  manages: '#f97316',
+  reports_to: '#ec4899',
+  default: '#00ffff',
+};
+
+function getEdgeColor(relationshipType: string): string {
+  return RELATIONSHIP_COLORS[relationshipType] || RELATIONSHIP_COLORS.default;
+}
+
 function calculateNodePositions(nodes: GraphNode[], edges: GraphEdge[]) {
   const positions: Record<string, [number, number, number]> = {};
   const nodeCount = nodes.length;
@@ -172,6 +185,7 @@ function EdgeLabel({
   isHighlighted: boolean;
 }) {
   const formattedLabel = relationshipType.replace(/_/g, ' ');
+  const edgeColor = getEdgeColor(relationshipType);
   
   return (
     <Html
@@ -183,9 +197,9 @@ function EdgeLabel({
       <div 
         className="font-tech text-xs px-2 py-0.5 rounded whitespace-nowrap select-none"
         style={{ 
-          background: isHighlighted ? 'rgba(0, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.5)',
-          color: isHighlighted ? '#00ffff' : 'rgba(0, 255, 255, 0.6)',
-          border: `1px solid ${isHighlighted ? 'rgba(0, 255, 255, 0.5)' : 'rgba(0, 255, 255, 0.2)'}`,
+          background: isHighlighted ? `${edgeColor}33` : 'rgba(0, 0, 0, 0.6)',
+          color: edgeColor,
+          border: `1px solid ${edgeColor}${isHighlighted ? '80' : '40'}`,
           textShadow: '0 0 5px rgba(0,0,0,0.8)',
         }}
       >
@@ -206,6 +220,8 @@ function Edge3D({
   isHighlighted: boolean;
   relationshipType: string;
 }) {
+  const edgeColor = getEdgeColor(relationshipType);
+  
   const lineObject = useMemo(() => {
     const points = [
       new THREE.Vector3(...start),
@@ -213,12 +229,12 @@ function Edge3D({
     ];
     const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
     const lineMaterial = new THREE.LineBasicMaterial({
-      color: '#00ffff',
+      color: edgeColor,
       transparent: true,
-      opacity: isHighlighted ? 0.8 : 0.25,
+      opacity: isHighlighted ? 0.9 : 0.4,
     });
     return new THREE.Line(lineGeometry, lineMaterial);
-  }, [start, end, isHighlighted]);
+  }, [start, end, isHighlighted, edgeColor]);
   
   const midPoint: [number, number, number] = [
     (start[0] + end[0]) / 2,

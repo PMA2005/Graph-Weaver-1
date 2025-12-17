@@ -38,15 +38,16 @@ export default function AddNodeModal({ onClose, onSubmit, isLoading }: AddNodeMo
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center p-8"
-      style={{ background: 'rgba(0, 0, 0, 0.85)' }}
+      style={{ background: 'rgba(0, 0, 0, 0.5)' }}
       onClick={onClose}
       data-testid="modal-add-node"
     >
       <div 
         className="relative max-w-md w-full rounded-xl p-6 border border-cyan-500/30"
         style={{
-          background: 'rgba(20, 24, 59, 0.95)',
-          boxShadow: '0 0 50px rgba(0, 255, 255, 0.2)',
+          background: 'rgba(10, 14, 39, 0.85)',
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 0 50px rgba(0, 255, 255, 0.15)',
         }}
         onClick={e => e.stopPropagation()}
       >
