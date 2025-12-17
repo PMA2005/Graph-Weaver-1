@@ -27,18 +27,12 @@ interface Graph3DCanvasProps {
 const NODE_TYPE_COLORS: Record<string, string> = {
   person: '#00ffff',
   project: '#b026ff',
-  team: '#ff006e',
-  milestone: '#39ff14',
-  department: '#00d9ff',
   default: '#ff6b35',
 };
 
 const NODE_TYPE_SHAPES: Record<string, 'sphere' | 'box' | 'octahedron'> = {
   person: 'sphere',
   project: 'box',
-  team: 'octahedron',
-  milestone: 'octahedron',
-  department: 'box',
   default: 'sphere',
 };
 

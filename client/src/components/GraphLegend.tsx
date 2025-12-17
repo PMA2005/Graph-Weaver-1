@@ -1,4 +1,4 @@
-import { User, Folder, Users, Flag, Building2 } from 'lucide-react';
+import { User, Folder } from 'lucide-react';
 
 interface LegendItem {
   type: string;
@@ -10,9 +10,6 @@ interface LegendItem {
 const LEGEND_ITEMS: LegendItem[] = [
   { type: 'person', label: 'Person', color: '#00ffff', icon: User },
   { type: 'project', label: 'Project', color: '#b026ff', icon: Folder },
-  { type: 'team', label: 'Team', color: '#ff006e', icon: Users },
-  { type: 'milestone', label: 'Milestone', color: '#39ff14', icon: Flag },
-  { type: 'department', label: 'Department', color: '#00d9ff', icon: Building2 },
 ];
 
 interface GraphLegendProps {

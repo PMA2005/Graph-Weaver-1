@@ -1,4 +1,4 @@
-import { X, User, Folder, Users, Flag, Building2, Link2, Trash2, Edit3 } from 'lucide-react';
+import { X, User, Folder, Link2, Trash2, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -30,18 +30,12 @@ interface NodeDetailsSidebarProps {
 const NODE_TYPE_COLORS: Record<string, string> = {
   person: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/50',
   project: 'bg-purple-500/20 text-purple-400 border-purple-500/50',
-  team: 'bg-pink-500/20 text-pink-400 border-pink-500/50',
-  milestone: 'bg-green-500/20 text-green-400 border-green-500/50',
-  department: 'bg-blue-500/20 text-blue-400 border-blue-500/50',
   default: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
 };
 
 const NODE_TYPE_ICONS: Record<string, typeof User> = {
   person: User,
   project: Folder,
-  team: Users,
-  milestone: Flag,
-  department: Building2,
 };
 
 export default function NodeDetailsSidebar({
