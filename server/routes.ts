@@ -8,9 +8,9 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  app.get("/api/graph", (_req, res) => {
+  app.get("/api/graph", async (_req, res) => {
     try {
-      const data = storage.getGraphData();
+      const data = await storage.getGraphData();
       res.json(data);
     } catch (error) {
       console.error("Error fetching graph data:", error);
@@ -18,9 +18,9 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/nodes", (_req, res) => {
+  app.get("/api/nodes", async (_req, res) => {
     try {
-      const nodes = storage.getNodes();
+      const nodes = await storage.getNodes();
       res.json(nodes);
     } catch (error) {
       console.error("Error fetching nodes:", error);
@@ -28,9 +28,9 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/nodes/:nodeId", (req, res) => {
+  app.get("/api/nodes/:nodeId", async (req, res) => {
     try {
-      const node = storage.getNodeById(req.params.nodeId);
+      const node = await storage.getNodeById(req.params.nodeId);
       if (!node) {
         return res.status(404).json({ error: "Node not found" });
       }
@@ -41,13 +41,13 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/nodes", (req, res) => {
+  app.post("/api/nodes", async (req, res) => {
     try {
       const parsed = insertNodeSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid node data", details: parsed.error });
       }
-      const node = storage.createNode(parsed.data);
+      const node = await storage.createNode(parsed.data);
       res.status(201).json(node);
     } catch (error) {
       console.error("Error creating node:", error);
@@ -55,9 +55,9 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/nodes/:nodeId", (req, res) => {
+  app.patch("/api/nodes/:nodeId", async (req, res) => {
     try {
-      const node = storage.updateNode(req.params.nodeId, req.body);
+      const node = await storage.updateNode(req.params.nodeId, req.body);
       if (!node) {
         return res.status(404).json({ error: "Node not found" });
       }
@@ -68,9 +68,9 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/nodes/:nodeId", (req, res) => {
+  app.delete("/api/nodes/:nodeId", async (req, res) => {
     try {
-      const deleted = storage.deleteNode(req.params.nodeId);
+      const deleted = await storage.deleteNode(req.params.nodeId);
       if (!deleted) {
         return res.status(404).json({ error: "Node not found" });
       }
@@ -81,9 +81,9 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/edges", (_req, res) => {
+  app.get("/api/edges", async (_req, res) => {
     try {
-      const edges = storage.getEdges();
+      const edges = await storage.getEdges();
       res.json(edges);
     } catch (error) {
       console.error("Error fetching edges:", error);
@@ -91,13 +91,13 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/edges", (req, res) => {
+  app.post("/api/edges", async (req, res) => {
     try {
       const parsed = insertEdgeSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid edge data", details: parsed.error });
       }
-      const edge = storage.createEdge(parsed.data);
+      const edge = await storage.createEdge(parsed.data);
       res.status(201).json(edge);
     } catch (error) {
       console.error("Error creating edge:", error);
@@ -105,13 +105,13 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/edges", (req, res) => {
+  app.delete("/api/edges", async (req, res) => {
     try {
       const { source_node, target_node, relationship_type } = req.query;
       if (!source_node || !target_node) {
         return res.status(400).json({ error: "source_node and target_node are required" });
       }
-      const deleted = storage.deleteEdge(
+      const deleted = await storage.deleteEdge(
         source_node as string, 
         target_node as string,
         relationship_type as string | undefined
