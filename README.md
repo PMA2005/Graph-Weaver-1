@@ -15,23 +15,52 @@ A 3D interactive graph visualization web application featuring a sci-fi aestheti
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org) version 20 or higher
+Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
 
-### Installation
+### macOS
 
 1. Download or clone this project
 
-2. Install dependencies:
+2. Open **Terminal** and navigate to the project folder:
+   ```bash
+   cd /path/to/your/project
+   ```
+
+3. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Start the development server:
+4. Start the development server:
    ```bash
    npm run dev
    ```
 
-4. Open your browser to:
+5. Open your browser to:
+   ```
+   http://localhost:5000
+   ```
+
+### Windows
+
+1. Download or clone this project
+
+2. Open **Command Prompt** or **PowerShell** and navigate to the project folder:
+   ```cmd
+   cd C:\path\to\your\project
+   ```
+
+3. Install dependencies:
+   ```cmd
+   npm install
+   ```
+
+4. Start the development server:
+   ```cmd
+   npm run dev
+   ```
+
+5. Open your browser to:
    ```
    http://localhost:5000
    ```
@@ -61,13 +90,17 @@ attached_assets/graph2_1765932308440.db
 
 ### Viewing Database Contents
 
-From the terminal:
+**macOS (Terminal):**
 ```bash
 sqlite3 attached_assets/graph2_1765932308440.db "SELECT * FROM nodes;"
 sqlite3 attached_assets/graph2_1765932308440.db "SELECT * FROM edges;"
 ```
 
-Or use [DB Browser for SQLite](https://sqlitebrowser.org/) to open the .db file.
+**Windows (Command Prompt):**
+
+SQLite is not pre-installed on Windows. You can either:
+1. Download [DB Browser for SQLite](https://sqlitebrowser.org/) and open the .db file
+2. Install SQLite from [sqlite.org/download](https://www.sqlite.org/download.html) and use the same commands as macOS
 
 ## Relationship Types
 
