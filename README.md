@@ -19,51 +19,77 @@ Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
 
 ### macOS
 
-1. Download or clone this project
+1. Download the project as a zip file from Replit
 
-2. Open **Terminal** and navigate to the project folder:
+2. Extract the zip file (double-click it)
+
+3. Open **Terminal** and navigate to the extracted project folder:
    ```bash
-   cd /path/to/your/project
+   cd ~/Downloads/Graph-Weaver-1
+   ```
+   
+   **Note:** If you extracted to a different location, navigate there first:
+   ```bash
+   cd /path/to/extracted/folder
+   ls                          # See what's inside
+   cd Graph-Weaver-1           # Enter the project folder
    ```
 
-3. Install dependencies:
+4. Install dependencies:
    ```bash
    npm install
    ```
 
-4. Start the development server:
+5. Start the development server:
    ```bash
    npm run dev
    ```
 
-5. Open your browser to:
+6. Open your browser to:
    ```
    http://localhost:5000
    ```
 
 ### Windows
 
-1. Download or clone this project
+1. Download the project as a zip file from Replit
 
-2. Open **Command Prompt** or **PowerShell** and navigate to the project folder:
+2. Extract the zip file (right-click > Extract All)
+
+3. Open **Command Prompt** or **PowerShell** and navigate to the extracted project folder:
    ```cmd
-   cd C:\path\to\your\project
+   cd C:\Users\YourName\Downloads\Graph-Weaver-1
+   ```
+   
+   **Note:** If you extracted to a different location, navigate there first:
+   ```cmd
+   cd C:\path\to\extracted\folder
+   dir                         # See what's inside
+   cd Graph-Weaver-1           # Enter the project folder
    ```
 
-3. Install dependencies:
+4. Install dependencies:
    ```cmd
    npm install
    ```
 
-4. Start the development server:
+5. Start the development server:
    ```cmd
    npm run dev
    ```
 
-5. Open your browser to:
+6. Open your browser to:
    ```
    http://localhost:5000
    ```
+
+## Troubleshooting
+
+### "Could not read package.json" error
+You're in the wrong folder. Use `ls` (Mac) or `dir` (Windows) to see folder contents, then `cd` into the project folder.
+
+### Server won't start
+Make sure no other application is using port 5000. You can also try port 3000 by editing `server/index.ts`.
 
 ## Database
 
