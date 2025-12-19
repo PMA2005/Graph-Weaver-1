@@ -214,6 +214,8 @@ export default function Home() {
     );
   }
 
+  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget;
+
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
       <TopNavigation
@@ -225,7 +227,10 @@ export default function Home() {
         onAddNode={() => setShowAddNode(true)}
       />
 
-      <div className="absolute inset-0 pt-16 pb-20">
+      <div 
+        className="absolute inset-0 pt-16 pb-20 transition-opacity duration-200"
+        style={{ opacity: isAnyModalOpen ? 0 : 1 }}
+      >
         <Graph3DCanvas
           nodes={filteredNodes}
           edges={filteredEdges}
