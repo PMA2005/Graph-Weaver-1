@@ -231,16 +231,17 @@ export default function Home() {
       <div 
         className="absolute inset-0 pt-16 pb-20 transition-all duration-300"
         style={{ 
-          opacity: isAnyModalOpen ? 0 : 1,
-          filter: isSidebarOpen && !isAnyModalOpen ? 'blur(3px)' : 'none',
+          filter: isSidebarOpen ? 'blur(3px)' : 'none',
         }}
       >
-        <Graph3DCanvas
-          nodes={filteredNodes}
-          edges={filteredEdges}
-          selectedNode={selectedNode}
-          onNodeSelect={setSelectedNode}
-        />
+        {!isAnyModalOpen && (
+          <Graph3DCanvas
+            nodes={filteredNodes}
+            edges={filteredEdges}
+            selectedNode={selectedNode}
+            onNodeSelect={setSelectedNode}
+          />
+        )}
       </div>
 
       {selectedNode && (
