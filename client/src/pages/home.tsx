@@ -215,6 +215,7 @@ export default function Home() {
   }
 
   const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget;
+  const isSidebarOpen = !!selectedNode;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -228,8 +229,11 @@ export default function Home() {
       />
 
       <div 
-        className="absolute inset-0 pt-16 pb-20 transition-opacity duration-200"
-        style={{ opacity: isAnyModalOpen ? 0 : 1 }}
+        className="absolute inset-0 pt-16 pb-20 transition-all duration-300"
+        style={{ 
+          opacity: isAnyModalOpen ? 0 : 1,
+          filter: isSidebarOpen && !isAnyModalOpen ? 'blur(3px)' : 'none',
+        }}
       >
         <Graph3DCanvas
           nodes={filteredNodes}
