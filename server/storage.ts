@@ -14,6 +14,7 @@ export interface IStorage {
   deleteNode(nodeId: string): boolean;
   createEdge(edge: InsertEdge): GraphEdge;
   deleteEdge(sourceNode: string, targetNode: string, relationshipType?: string): boolean;
+  importGraphData(data: GraphData): { nodesImported: number; edgesImported: number };
 }
 
 export class SQLiteStorage implements IStorage {
@@ -155,6 +156,52 @@ export class SQLiteStorage implements IStorage {
       const result = stmt.run(sourceNode, targetNode);
       return result.changes > 0;
     }
+  }
+
+  importGraphData(data: GraphData): { nodesImported: number; edgesImported: number } {
+    const transaction = this.db.transaction(() => {
+      this.db.exec('DELETE FROM edges');
+      this.db.exec('DELETE FROM nodes');
+
+      const insertNode = this.db.prepare(`
+        INSERT INTO nodes (node_id, node_type, display_name, description, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      const insertEdge = this.db.prepare(`
+        INSERT INTO edges (source_node, target_node, relationship_type, weight, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      let nodesImported = 0;
+      let edgesImported = 0;
+
+      for (const node of data.nodes || []) {
+        insertNode.run(
+          node.node_id,
+          node.node_type,
+          node.display_name,
+          node.description || '',
+          node.created_at || new Date().toISOString()
+        );
+        nodesImported++;
+      }
+
+      for (const edge of data.edges || []) {
+        insertEdge.run(
+          edge.source_node,
+          edge.target_node,
+          edge.relationship_type,
+          edge.weight || 1,
+          edge.timestamp || new Date().toISOString()
+        );
+        edgesImported++;
+      }
+
+      return { nodesImported, edgesImported };
+    });
+
+    return transaction();
   }
 }
 

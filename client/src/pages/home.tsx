@@ -144,6 +144,49 @@ export default function Home() {
     toast({ title: 'Exported', description: 'Graph data exported as JSON' });
   };
 
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          toast({ title: 'Error', description: 'Invalid JSON file format.', variant: 'destructive' });
+          return;
+        }
+        
+        if (!data.nodes && !data.edges) {
+          toast({ title: 'Error', description: 'Invalid file format. Expected JSON with nodes and/or edges.', variant: 'destructive' });
+          return;
+        }
+        
+        const response = await apiRequest('POST', '/api/import', data);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          toast({ title: 'Error', description: errorData.error || 'Failed to import data.', variant: 'destructive' });
+          return;
+        }
+        
+        const result = await response.json();
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+        setSelectedNode(null);
+        toast({ title: 'Imported', description: result.message });
+      } catch (error) {
+        toast({ title: 'Error', description: 'Failed to import data. Please try again.', variant: 'destructive' });
+      }
+    };
+    input.click();
+  };
+
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
     
@@ -176,6 +219,7 @@ export default function Home() {
       <TopNavigation
         onResetView={handleResetView}
         onExport={handleExport}
+        onImport={handleImport}
         onHelp={() => setShowHelp(true)}
         onSettings={() => toast({ title: 'Settings', description: 'Settings panel coming soon' })}
         onAddNode={() => setShowAddNode(true)}

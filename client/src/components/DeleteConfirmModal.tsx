@@ -21,15 +21,14 @@ export default function DeleteConfirmModal({
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center p-8"
-      style={{ background: 'rgba(0, 0, 0, 0.5)' }}
+      style={{ background: 'rgba(0, 0, 0, 0.8)' }}
       onClick={onClose}
       data-testid="modal-delete-confirm"
     >
       <div 
         className="relative max-w-sm w-full rounded-xl p-6 border border-red-500/30"
         style={{
-          background: 'rgba(10, 14, 39, 0.85)',
-          backdropFilter: 'blur(12px)',
+          background: 'rgb(10, 14, 39)',
           boxShadow: '0 0 50px rgba(255, 0, 0, 0.1)',
         }}
         onClick={e => e.stopPropagation()}

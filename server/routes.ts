@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNodeSchema, insertEdgeSchema } from "@shared/schema";
+import { insertNodeSchema, insertEdgeSchema, graphDataSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -123,6 +123,33 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error deleting edge:", error);
       res.status(500).json({ error: "Failed to delete edge" });
+    }
+  });
+
+  app.post("/api/import", (req, res) => {
+    try {
+      const parsed = graphDataSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid import data format", 
+          details: parsed.error.errors 
+        });
+      }
+      
+      const data = parsed.data;
+      if (data.nodes.length === 0 && data.edges.length === 0) {
+        return res.status(400).json({ error: "Import data must contain at least one node or edge" });
+      }
+      
+      const result = storage.importGraphData(data);
+      res.json({ 
+        success: true, 
+        message: `Imported ${result.nodesImported} nodes and ${result.edgesImported} relationships`,
+        ...result 
+      });
+    } catch (error) {
+      console.error("Error importing data:", error);
+      res.status(500).json({ error: "Failed to import data" });
     }
   });
 

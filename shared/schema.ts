@@ -24,6 +24,11 @@ export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 export type InsertNode = z.infer<typeof insertNodeSchema>;
 export type InsertEdge = z.infer<typeof insertEdgeSchema>;
 
+export const graphDataSchema = z.object({
+  nodes: z.array(graphNodeSchema).default([]),
+  edges: z.array(graphEdgeSchema).default([]),
+});
+
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];

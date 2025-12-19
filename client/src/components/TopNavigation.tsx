@@ -1,4 +1,4 @@
-import { RotateCcw, Download, Settings, HelpCircle, Network, Plus, User, Folder } from 'lucide-react';
+import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -9,6 +9,7 @@ import {
 interface TopNavigationProps {
   onResetView?: () => void;
   onExport?: () => void;
+  onImport?: () => void;
   onHelp?: () => void;
   onSettings?: () => void;
   onAddNode?: () => void;
@@ -17,6 +18,7 @@ interface TopNavigationProps {
 export default function TopNavigation({
   onResetView,
   onExport,
+  onImport,
   onHelp,
   onSettings,
   onAddNode,
@@ -96,6 +98,21 @@ export default function TopNavigation({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Export Data</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onImport}
+              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              data-testid="button-import"
+            >
+              <Upload className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Import Data</TooltipContent>
         </Tooltip>
 
         <Tooltip>
