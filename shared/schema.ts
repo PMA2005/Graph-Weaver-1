@@ -4,7 +4,7 @@ export const graphNodeSchema = z.object({
   node_id: z.string(),
   node_type: z.string(),
   display_name: z.string(),
-  description: z.string().optional().default(""),
+  description: z.string(),
   created_at: z.string().optional(),
 });
 
