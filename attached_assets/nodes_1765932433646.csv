@@ -1,0 +1,13 @@
+node_id,node_type,display_name,description,created_at
+Project Atlas,project,Project Atlas,A cross-functional initiative focused on next-generation analytics tooling.,2024-01-01T00:00:00Z
+Project Zephyr,project,Project Zephyr,Research project exploring cloud-native automation and workflow optimization.,2024-02-01T00:00:00Z
+Project Orion,project,Project Orion,Core infrastructure modernization effort involving multiple teams.,2024-03-01T00:00:00Z
+
+Alice Johnson,person,Alice Johnson,Senior data scientist specializing in computer vision and model evaluation.,2023-07-12T00:00:00Z
+Bob Martinez,person,Bob Martinez,Full-stack engineer focusing on graph systems and real-time data pipelines.,2023-08-19T00:00:00Z
+Carol Singh,person,Carol Singh,Research engineer with expertise in distributed training and HPC systems.,2023-07-20T00:00:00Z
+David Kim,person,David Kim,Platform engineer responsible for CI/CD and infrastructure automation.,2023-09-02T00:00:00Z
+Emma Collins,person,Emma Collins,Product manager coordinating project timelines and cross-team communication.,2023-10-10T00:00:00Z
+Frank Li,person,Frank Li,Machine learning engineer with a focus on feature extraction and embeddings.,2023-11-05T00:00:00Z
+Grace Patel,person,Grace Patel,UX researcher studying developer workflows and knowledge graph visualization.,2023-05-14T00:00:00Z
+
