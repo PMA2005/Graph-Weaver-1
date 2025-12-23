@@ -32,14 +32,14 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center p-8"
-      style={{ background: 'rgba(0, 0, 0, 0.85)' }}
+      style={{ background: 'rgba(0, 0, 0, 0.92)' }}
       onClick={onClose}
       data-testid="overlay-help"
     >
       <div 
         className="relative max-w-lg w-full rounded-xl p-8 border border-cyan-500/30"
         style={{
-          background: 'rgba(20, 24, 59, 0.95)',
+          background: 'rgb(20, 24, 59)',
           boxShadow: '0 0 50px rgba(0, 255, 255, 0.2)',
         }}
         onClick={e => e.stopPropagation()}

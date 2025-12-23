@@ -356,7 +356,7 @@ export default function Home() {
           )}
         </div>
 
-        {primaryNode && !isAnyModalOpen && (
+        {primaryNode && (
           <NodeDetailsSidebar
             node={primaryNode}
             edges={edges}
