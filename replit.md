@@ -17,11 +17,13 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 │   └── graph2_*.db         # SQLite database with nodes and edges tables
 ├── client/src/
 │   ├── components/
-│   │   ├── Graph3DCanvas.tsx      # 3D visualization with Three.js
-│   │   ├── NodeDetailsSidebar.tsx # Node details panel
+│   │   ├── Graph3DCanvas.tsx      # 3D visualization with Three.js, camera persistence
+│   │   ├── NodeDetailsSidebar.tsx # Node details panel (right side)
+│   │   ├── FocusedGraphPanel.tsx  # Multi-select neighborhood panel (left side)
 │   │   ├── GraphLegend.tsx        # Color legend and filters
 │   │   ├── TopNavigation.tsx      # Header with controls
-│   │   ├── HelpOverlay.tsx        # Help modal for new users
+│   │   ├── ThemeProvider.tsx      # Dark mode toggle with localStorage persistence
+│   │   ├── HelpOverlay.tsx        # Help modal for new users (opaque background)
 │   │   ├── LoadingScreen.tsx      # Loading animation
 │   │   ├── AddNodeModal.tsx       # Modal for creating new nodes
 │   │   ├── AddEdgeModal.tsx       # Modal for creating new edges
@@ -74,6 +76,16 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 - Glowing 3D nodes: spheres for people, cubes for projects
 - Interactive: rotate, zoom, pan the 3D view
 - Click nodes to see details in sidebar
+- Dark mode toggle with system preference detection
+
+## Key Features
+- **Multi-Select**: Ctrl/Cmd+click to select multiple nodes
+- **Focused Graph Panel**: Shows neighborhood subgraph of selected nodes (left side)
+- **Node Details Sidebar**: Edit, delete, and manage connections (right side)
+- **Camera Persistence**: Camera position saved and restored when clicking nodes
+- **X Button Removal**: Remove individual nodes from selection without deselecting all
+- **Help Overlay**: First-time user instructions with opaque background
+- **Auto-rotation**: 3D view slowly rotates, pauses on interaction
 
 ## Electron Desktop App
 The app can be packaged as a standalone desktop application using Electron.
