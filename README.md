@@ -15,6 +15,7 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ### Multi-Select & Focused Graph Panel
 - **Multi-Select Support** - Hold Ctrl (Windows/Linux) or Cmd (macOS) and click to select multiple nodes
+- **Remove from Selection** - Click the X button on any selected node tab to remove it from your selection
 - **Focused Graph Panel** - Left panel shows neighborhood subgraph of selected node(s)
 - **Single/All View Modes** - Toggle between viewing one node's neighborhood or combined neighborhoods of all selected nodes
 - **Node Navigation** - Click nodes in the focused panel to navigate to their neighborhood
@@ -27,10 +28,13 @@ Available as both a web application and portable desktop apps for Windows and ma
 - **SQLite Database** - Persistent data storage with included sample data
 
 ### User Interface
+- **Dark Mode Toggle** - Switch between light and dark themes with automatic system preference detection
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
 - **Responsive Layout** - Main graph centers automatically when side panels open/close
+- **Camera Persistence** - Camera position stays in place when clicking nodes (no jumping)
 - **Details Sidebar** - View and edit node details, see all connections
 - **Connection Management** - Add and remove relationships from the sidebar
+- **Help Overlay** - First-time instructions that fully hide the graph for readability
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
 
 ## Usage Guide
@@ -44,8 +48,13 @@ Available as both a web application and portable desktop apps for Windows and ma
 ### Multi-Select
 - **Ctrl+Click (Windows/Linux)** or **Cmd+Click (macOS)** - Add/remove nodes from selection
 - Selected nodes show in the Focused Graph Panel on the left
+- **Click X button** - Remove a node from your selection without deselecting everything
 - Use "Single" mode to view one node's neighborhood at a time
 - Use "All" mode to see combined neighborhoods of all selected nodes
+
+### Theme Toggle
+- **Click the theme toggle** in the top navigation bar to switch between light and dark mode
+- Your preference is saved to localStorage and remembered on next visit
 
 ### Managing Data
 - **Add Node** - Click "+ Add Node" in the top navigation
