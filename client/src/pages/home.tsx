@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import Graph3DCanvas from '@/components/Graph3DCanvas';
@@ -11,11 +11,15 @@ import AddNodeModal from '@/components/AddNodeModal';
 import EditNodeModal from '@/components/EditNodeModal';
 import AddEdgeModal from '@/components/AddEdgeModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import FocusedGraphPanel from '@/components/FocusedGraphPanel';
 import { useToast } from '@/hooks/use-toast';
 import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
 export default function Home() {
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+  const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
+  const [focusedViewMode, setFocusedViewMode] = useState<'single' | 'combined'>('single');
+  const [activeViewIndex, setActiveViewIndex] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showAddNode, setShowAddNode] = useState(false);
@@ -23,6 +27,41 @@ export default function Home() {
   const [showAddEdge, setShowAddEdge] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
   const { toast } = useToast();
+
+  const toggleNodeSelection = useCallback((node: GraphNode, multiSelect: boolean = false) => {
+    const nodeId = node.node_id;
+    setSelectedNodeIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+        setSelectionOrder(order => order.filter(id => id !== nodeId));
+      } else {
+        if (!multiSelect) {
+          newSet.clear();
+          setSelectionOrder([nodeId]);
+        } else {
+          setSelectionOrder(order => [...order, nodeId]);
+        }
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+    setActiveViewIndex(0);
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedNodeIds(new Set());
+    setSelectionOrder([]);
+    setActiveViewIndex(0);
+  }, []);
+
+  const setPrimaryNode = useCallback((nodeId: string) => {
+    setSelectionOrder(order => {
+      const newOrder = order.filter(id => id !== nodeId);
+      return [nodeId, ...newOrder];
+    });
+    setActiveViewIndex(0);
+  }, []);
 
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
     queryKey: ['/api/graph'],
@@ -57,7 +96,7 @@ export default function Home() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
       setShowEditNode(false);
-      setSelectedNode(null);
+      clearSelection();
       toast({ title: 'Success', description: 'Node updated successfully' });
     },
     onError: () => {
@@ -72,7 +111,7 @@ export default function Home() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
       setDeleteTarget(null);
-      setSelectedNode(null);
+      clearSelection();
       toast({ title: 'Success', description: 'Node deleted successfully' });
     },
     onError: () => {
@@ -124,8 +163,58 @@ export default function Home() {
       )
     : edges;
 
+  const selectedNodes = useMemo(() => 
+    selectionOrder.map(id => nodes.find(n => n.node_id === id)).filter(Boolean) as GraphNode[],
+    [selectionOrder, nodes]
+  );
+
+  const primaryNode = selectedNodes[0] || null;
+
+  const getNeighborhood = useCallback((nodeId: string) => {
+    const neighborEdges = edges.filter(e => e.source_node === nodeId || e.target_node === nodeId);
+    const neighborIds = new Set<string>();
+    neighborIds.add(nodeId);
+    neighborEdges.forEach(e => {
+      neighborIds.add(e.source_node);
+      neighborIds.add(e.target_node);
+    });
+    const neighborNodes = nodes.filter(n => neighborIds.has(n.node_id));
+    return { nodes: neighborNodes, edges: neighborEdges };
+  }, [nodes, edges]);
+
+  const focusedSubgraph = useMemo(() => {
+    if (selectedNodes.length === 0) return { nodes: [], edges: [] };
+    
+    if (focusedViewMode === 'single') {
+      const targetNodeId = selectionOrder[activeViewIndex] || selectionOrder[0];
+      if (!targetNodeId) return { nodes: [], edges: [] };
+      return getNeighborhood(targetNodeId);
+    } else {
+      const allNeighborIds = new Set<string>();
+      const allNeighborEdges: GraphEdge[] = [];
+      const edgeSet = new Set<string>();
+      
+      selectedNodes.forEach(node => {
+        const neighborhood = getNeighborhood(node.node_id);
+        neighborhood.nodes.forEach(n => allNeighborIds.add(n.node_id));
+        neighborhood.edges.forEach(e => {
+          const edgeKey = `${e.source_node}-${e.target_node}-${e.relationship_type}`;
+          if (!edgeSet.has(edgeKey)) {
+            edgeSet.add(edgeKey);
+            allNeighborEdges.push(e);
+          }
+        });
+      });
+      
+      return {
+        nodes: nodes.filter(n => allNeighborIds.has(n.node_id)),
+        edges: allNeighborEdges
+      };
+    }
+  }, [selectedNodes, focusedViewMode, activeViewIndex, selectionOrder, getNeighborhood, nodes]);
+
   const handleResetView = () => {
-    setSelectedNode(null);
+    clearSelection();
     setTypeFilter(null);
     toast({ title: 'View Reset', description: 'Graph view has been reset to default' });
   };
@@ -176,7 +265,7 @@ export default function Home() {
         const result = await response.json();
         
         queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
-        setSelectedNode(null);
+        clearSelection();
         toast({ title: 'Imported', description: result.message });
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to import data. Please try again.', variant: 'destructive' });
@@ -196,6 +285,14 @@ export default function Home() {
     }
   };
 
+  const handleNodeSelect = useCallback((node: GraphNode | null, multiSelect: boolean = false) => {
+    if (node) {
+      toggleNodeSelection(node, multiSelect);
+    } else {
+      clearSelection();
+    }
+  }, [toggleNodeSelection, clearSelection]);
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -213,7 +310,7 @@ export default function Home() {
   }
 
   const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget;
-  const isSidebarOpen = !!selectedNode;
+  const isSidebarOpen = selectedNodes.length > 0;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -226,31 +323,45 @@ export default function Home() {
         onAddNode={() => setShowAddNode(true)}
       />
 
-      <div 
-        className="absolute inset-0 pt-16 pb-20 transition-all duration-300"
-        style={{ 
-          filter: isSidebarOpen ? 'blur(3px)' : 'none',
-        }}
-      >
-        {!isAnyModalOpen && (
-          <Graph3DCanvas
-            nodes={filteredNodes}
-            edges={filteredEdges}
-            selectedNode={selectedNode}
-            onNodeSelect={setSelectedNode}
+      <div className="absolute inset-0 pt-16 pb-20 flex">
+        {selectedNodes.length > 0 && (
+          <FocusedGraphPanel
+            subgraph={focusedSubgraph}
+            selectedNodes={selectedNodes}
+            selectedNodeIds={selectedNodeIds}
+            viewMode={focusedViewMode}
+            activeViewIndex={activeViewIndex}
+            onViewModeChange={setFocusedViewMode}
+            onActiveViewChange={setActiveViewIndex}
+            onNodeSelect={(node: GraphNode) => handleNodeSelect(node, true)}
+            onNodeNavigate={(node: GraphNode) => {
+              setPrimaryNode(node.node_id);
+            }}
           />
         )}
+        
+        <div className="flex-1 relative">
+          {!isAnyModalOpen && (
+            <Graph3DCanvas
+              nodes={filteredNodes}
+              edges={filteredEdges}
+              selectedNode={primaryNode}
+              selectedNodeIds={selectedNodeIds}
+              onNodeSelect={handleNodeSelect}
+            />
+          )}
+        </div>
       </div>
 
-      {selectedNode && (
+      {primaryNode && (
         <NodeDetailsSidebar
-          node={selectedNode}
+          node={primaryNode}
           edges={edges}
           allNodes={nodes}
-          onClose={() => setSelectedNode(null)}
-          onNodeNavigate={(node) => setSelectedNode(node)}
+          onClose={clearSelection}
+          onNodeNavigate={(node) => handleNodeSelect(node, false)}
           onEdit={() => setShowEditNode(true)}
-          onDelete={() => setDeleteTarget({ type: 'node', item: selectedNode })}
+          onDelete={() => setDeleteTarget({ type: 'node', item: primaryNode })}
           onAddRelationship={() => setShowAddEdge(true)}
           onRemoveRelationship={(edge) => setDeleteTarget({ type: 'edge', item: edge })}
         />
@@ -273,9 +384,9 @@ export default function Home() {
         />
       )}
 
-      {showEditNode && selectedNode && (
+      {showEditNode && primaryNode && (
         <EditNodeModal
-          node={selectedNode}
+          node={primaryNode}
           onClose={() => setShowEditNode(false)}
           onSubmit={(nodeId, updates) => updateNodeMutation.mutate({ nodeId, updates })}
           isLoading={updateNodeMutation.isPending}
@@ -288,7 +399,7 @@ export default function Home() {
           onClose={() => setShowAddEdge(false)}
           onSubmit={(edge) => addEdgeMutation.mutate(edge)}
           isLoading={addEdgeMutation.isPending}
-          preselectedSource={selectedNode?.node_id}
+          preselectedSource={primaryNode?.node_id}
         />
       )}
 

@@ -21,7 +21,8 @@ interface Graph3DCanvasProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   selectedNode: GraphNode | null;
-  onNodeSelect: (node: GraphNode | null) => void;
+  selectedNodeIds?: Set<string>;
+  onNodeSelect: (node: GraphNode | null, multiSelect?: boolean) => void;
 }
 
 const NODE_TYPE_COLORS: Record<string, string> = {
@@ -96,7 +97,7 @@ function Node3D({
   position: [number, number, number]; 
   isSelected: boolean;
   isConnected: boolean;
-  onClick: () => void;
+  onClick: (event?: { ctrlKey: boolean; metaKey: boolean }) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -117,7 +118,11 @@ function Node3D({
     <group position={position}>
       <mesh
         ref={meshRef}
-        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          const nativeEvent = e.nativeEvent as PointerEvent;
+          onClick({ ctrlKey: nativeEvent.ctrlKey, metaKey: nativeEvent.metaKey }); 
+        }}
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
         scale={scale}
@@ -256,12 +261,21 @@ function Edge3D({
   );
 }
 
+interface SceneProps {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  selectedNode: GraphNode | null;
+  selectedNodeIds?: Set<string>;
+  onNodeSelect: (node: GraphNode | null, event?: { ctrlKey?: boolean; metaKey?: boolean }) => void;
+}
+
 function Scene({ 
   nodes, 
   edges, 
-  selectedNode, 
+  selectedNode,
+  selectedNodeIds,
   onNodeSelect 
-}: Graph3DCanvasProps) {
+}: SceneProps) {
   const positions = useMemo(() => calculateNodePositions(nodes, edges), [nodes, edges]);
   
   const connectedNodeIds = new Set<string>();
@@ -275,6 +289,14 @@ function Scene({
       }
     });
   }
+
+  const handleNodeClick = (node: GraphNode, event: { ctrlKey: boolean; metaKey: boolean }) => {
+    if (event.ctrlKey || event.metaKey) {
+      onNodeSelect(node, event);
+    } else {
+      onNodeSelect(selectedNode?.node_id === node.node_id ? null : node, event);
+    }
+  };
 
   return (
     <>
@@ -322,18 +344,19 @@ function Scene({
         );
       })}
       
-      {nodes.map(node => (
-        <Node3D
-          key={node.node_id}
-          node={node}
-          position={positions[node.node_id]}
-          isSelected={selectedNode?.node_id === node.node_id}
-          isConnected={connectedNodeIds.has(node.node_id)}
-          onClick={() => onNodeSelect(
-            selectedNode?.node_id === node.node_id ? null : node
-          )}
-        />
-      ))}
+      {nodes.map(node => {
+        const isSelected = selectedNodeIds?.has(node.node_id) || selectedNode?.node_id === node.node_id;
+        return (
+          <Node3D
+            key={node.node_id}
+            node={node}
+            position={positions[node.node_id]}
+            isSelected={isSelected}
+            isConnected={connectedNodeIds.has(node.node_id)}
+            onClick={(e) => handleNodeClick(node, { ctrlKey: e?.ctrlKey || false, metaKey: e?.metaKey || false })}
+          />
+        );
+      })}
     </>
   );
 }
@@ -341,9 +364,15 @@ function Scene({
 export default function Graph3DCanvas({ 
   nodes, 
   edges, 
-  selectedNode, 
+  selectedNode,
+  selectedNodeIds,
   onNodeSelect 
 }: Graph3DCanvasProps) {
+  const handleNodeClick = (node: GraphNode | null, event?: { ctrlKey?: boolean; metaKey?: boolean }) => {
+    const multiSelect = event?.ctrlKey || event?.metaKey || false;
+    onNodeSelect(node, multiSelect);
+  };
+
   return (
     <div 
       className="w-full h-full"
@@ -351,7 +380,7 @@ export default function Graph3DCanvas({
       data-testid="canvas-3d-graph"
     >
       <Canvas
-        onPointerMissed={() => onNodeSelect(null)}
+        onPointerMissed={() => onNodeSelect(null, false)}
         gl={{ antialias: true, alpha: true }}
       >
         <Suspense fallback={null}>
@@ -359,7 +388,8 @@ export default function Graph3DCanvas({
             nodes={nodes} 
             edges={edges} 
             selectedNode={selectedNode}
-            onNodeSelect={onNodeSelect}
+            selectedNodeIds={selectedNodeIds}
+            onNodeSelect={handleNodeClick}
           />
         </Suspense>
       </Canvas>
