@@ -307,6 +307,8 @@ function Scene({
         enableRotate={true}
         minDistance={5}
         maxDistance={30}
+        autoRotate
+        autoRotateSpeed={0.3}
       />
       
       <ambientLight intensity={0.3} />

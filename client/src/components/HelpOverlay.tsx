@@ -70,7 +70,8 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
           {HELP_ITEMS.map((item, i) => (
             <div 
               key={i}
-              className="p-4 rounded-lg border border-cyan-500/20 bg-cyan-500/5"
+              className="p-4 rounded-lg border border-cyan-500/20"
+              style={{ background: 'rgb(25, 30, 70)' }}
             >
               <div 
                 className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
