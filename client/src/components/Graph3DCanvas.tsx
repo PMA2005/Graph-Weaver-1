@@ -309,6 +309,11 @@ function Scene({
         maxDistance={30}
         autoRotate
         autoRotateSpeed={0.3}
+        enableDamping
+        dampingFactor={0.05}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI}
+        rotateSpeed={0.8}
       />
       
       <ambientLight intensity={0.3} />
