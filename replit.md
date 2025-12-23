@@ -9,6 +9,7 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 - **Frontend**: React, React Three Fiber, Drei, Three.js, TailwindCSS
 - **Backend**: Express.js, better-sqlite3
 - **Database**: SQLite (graph2.db)
+- **Desktop**: Electron (for standalone desktop app packaging)
 
 ## Project Structure
 ```
@@ -21,12 +22,32 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 │   │   ├── GraphLegend.tsx        # Color legend and filters
 │   │   ├── TopNavigation.tsx      # Header with controls
 │   │   ├── HelpOverlay.tsx        # Help modal for new users
-│   │   └── LoadingScreen.tsx      # Loading animation
+│   │   ├── LoadingScreen.tsx      # Loading animation
+│   │   ├── AddNodeModal.tsx       # Modal for creating new nodes
+│   │   ├── AddEdgeModal.tsx       # Modal for creating new edges
+│   │   ├── EditNodeModal.tsx      # Modal for editing existing nodes
+│   │   └── DeleteConfirmModal.tsx # Confirmation dialog for deletions
 │   └── pages/
 │       └── home.tsx               # Main page combining all components
+├── electron/                      # Electron desktop app wrapper
+│   ├── src/
+│   │   ├── main.ts               # Electron main process entry point
+│   │   ├── preload.ts            # Secure preload script for context bridge
+│   │   └── serverRunner.ts       # Starts Express server in production mode
+│   ├── package.json              # Electron-specific dependencies
+│   └── tsconfig.json             # TypeScript config for Electron
+├── script/                        # Build and packaging scripts
+│   ├── build.ts                  # Production build script (Vite + esbuild)
+│   └── pack-guard.js             # Platform validation for native modules
+├── scripts/                       # Utility scripts
+│   └── migrate-data.ts           # SQLite to PostgreSQL migration script
 ├── server/
-│   ├── routes.ts           # API endpoints for CRUD operations
-│   └── storage.ts          # SQLite database interface
+│   ├── index.ts           # Express server entry point
+│   ├── routes.ts          # API endpoints for CRUD operations
+│   ├── storage.ts         # SQLite database interface
+│   ├── db.ts              # Database connection setup
+│   ├── static.ts          # Static file serving for production
+│   └── vite.ts            # Vite dev server integration
 └── shared/
     └── schema.ts           # TypeScript types and Zod schemas
 ```
@@ -45,6 +66,7 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 - GET /api/edges - Get all edges
 - POST /api/edges - Create edge
 - DELETE /api/edges - Delete edge
+- GET /api/health - Health check endpoint
 
 ## Visual Design
 - Sci-fi theme with neon colors (cyan for people, purple for projects)
@@ -52,3 +74,25 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 - Glowing 3D nodes: spheres for people, cubes for projects
 - Interactive: rotate, zoom, pan the 3D view
 - Click nodes to see details in sidebar
+
+## Electron Desktop App
+The app can be packaged as a standalone desktop application using Electron.
+
+### Electron Files
+- **electron/src/main.ts**: Main Electron process, creates the BrowserWindow and manages app lifecycle
+- **electron/src/preload.ts**: Secure context bridge (contextIsolation enabled, no Node APIs exposed to renderer)
+- **electron/src/serverRunner.ts**: Starts the Express server in production mode, handles database path resolution and port finding
+
+### Building for Desktop
+The desktop build process:
+1. `script/build.ts` - Bundles the client with Vite and server with esbuild
+2. `script/pack-guard.js` - Validates platform for native module builds (better-sqlite3 requires per-OS builds)
+3. Electron packages the bundled app for distribution
+
+## Data Migration
+The `scripts/migrate-data.ts` script migrates data from SQLite to PostgreSQL if needed for production deployment.
+
+## Running the App
+- **Development**: `npm run dev` starts both Express backend and Vite frontend
+- **Production Build**: Run `script/build.ts` to create production bundles
+- **Electron**: Build Electron wrapper separately for desktop distribution
