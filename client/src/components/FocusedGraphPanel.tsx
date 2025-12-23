@@ -67,13 +67,15 @@ function FocusedNode({
   position, 
   isCenter,
   isSelected,
-  onClick 
+  onClick,
+  onCtrlClick
 }: { 
   node: GraphNode; 
   position: [number, number, number]; 
   isCenter: boolean;
   isSelected: boolean;
   onClick: () => void;
+  onCtrlClick: () => void;
 }) {
   const color = NODE_TYPE_COLORS[node.node_type.toLowerCase()] || NODE_TYPE_COLORS.default;
   const isPerson = node.node_type.toLowerCase() === 'person';
@@ -81,7 +83,7 @@ function FocusedNode({
 
   return (
     <group position={position}>
-      <mesh onClick={(e) => { e.stopPropagation(); onClick(); }} scale={scale}>
+      <mesh onClick={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { onCtrlClick(); } else { onClick(); } }} scale={scale}>
         {isPerson ? (
           <sphereGeometry args={[0.25, 16, 16]} />
         ) : (
@@ -95,6 +97,26 @@ function FocusedNode({
           opacity={0.9}
         />
       </mesh>
+      <Html
+        position={[0, isPerson ? 0.4 : 0.35, 0]}
+        center
+        distanceFactor={6}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div 
+          className="text-center whitespace-nowrap select-none px-1.5 py-0.5 rounded"
+          style={{ 
+            fontSize: '9px',
+            fontWeight: isCenter ? 600 : 400,
+            color: isCenter ? '#ffffff' : color,
+            background: 'rgba(10, 14, 39, 0.85)',
+            border: isCenter ? `1px solid ${color}` : 'none',
+            textShadow: `0 0 6px ${color}`
+          }}
+        >
+          {node.display_name}
+        </div>
+      </Html>
       {isCenter && (
         <pointLight color={color} intensity={0.5} distance={3} />
       )}
@@ -163,13 +185,15 @@ function FocusedScene({
   edges, 
   centerNodeId,
   selectedNodeIds,
-  onNodeClick 
+  onNodeClick,
+  onNodeCtrlClick
 }: { 
   nodes: GraphNode[]; 
   edges: GraphEdge[];
   centerNodeId?: string;
   selectedNodeIds: Set<string>;
   onNodeClick: (node: GraphNode) => void;
+  onNodeCtrlClick: (node: GraphNode) => void;
 }) {
   const positions = useMemo(() => 
     calculateFocusedPositions(nodes, edges, centerNodeId),
@@ -206,6 +230,7 @@ function FocusedScene({
             isCenter={node.node_id === centerNodeId}
             isSelected={selectedNodeIds.has(node.node_id)}
             onClick={() => onNodeClick(node)}
+            onCtrlClick={() => onNodeCtrlClick(node)}
           />
         );
       })}
@@ -306,6 +331,7 @@ export default function FocusedGraphPanel({
               centerNodeId={centerNodeId}
               selectedNodeIds={selectedNodeIds}
               onNodeClick={onNodeNavigate}
+              onNodeCtrlClick={onNodeSelect}
             />
           </Suspense>
         </Canvas>
