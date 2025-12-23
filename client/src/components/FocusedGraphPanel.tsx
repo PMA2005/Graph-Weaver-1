@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
 import { Suspense, useMemo } from 'react';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/button';
@@ -120,12 +120,42 @@ function FocusedEdge({
     const material = new THREE.LineBasicMaterial({ 
       color: '#00ffff', 
       transparent: true, 
-      opacity: 0.4 
+      opacity: 0.5 
     });
     return new THREE.Line(geometry, material);
   }, [start, end]);
 
-  return <primitive object={lineRef} />;
+  const midPoint: [number, number, number] = [
+    (start[0] + end[0]) / 2,
+    (start[1] + end[1]) / 2 + 0.15,
+    (start[2] + end[2]) / 2
+  ];
+
+  const formattedLabel = relationshipType.replace(/_/g, ' ');
+
+  return (
+    <group>
+      <primitive object={lineRef} />
+      <Html
+        position={midPoint}
+        center
+        distanceFactor={8}
+        style={{ pointerEvents: 'none' }}
+      >
+        <div 
+          className="text-center whitespace-nowrap select-none px-1 py-0.5 rounded"
+          style={{ 
+            fontSize: '8px',
+            color: '#00ffff',
+            background: 'rgba(10, 14, 39, 0.8)',
+            textShadow: '0 0 4px rgba(0,255,255,0.5)'
+          }}
+        >
+          {formattedLabel}
+        </div>
+      </Html>
+    </group>
+  );
 }
 
 function FocusedScene({ 
@@ -212,9 +242,9 @@ export default function FocusedGraphPanel({
           <div className="flex gap-1">
             <Button
               size="sm"
-              variant={viewMode === 'single' ? 'default' : 'ghost'}
+              variant={viewMode === 'single' ? 'default' : 'outline'}
               onClick={() => onViewModeChange('single')}
-              className="h-7 px-2 text-xs"
+              className={`h-7 px-2 text-xs ${viewMode !== 'single' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : ''}`}
               data-testid="button-view-single"
             >
               <Eye className="w-3 h-3 mr-1" />
@@ -222,9 +252,9 @@ export default function FocusedGraphPanel({
             </Button>
             <Button
               size="sm"
-              variant={viewMode === 'combined' ? 'default' : 'ghost'}
+              variant={viewMode === 'combined' ? 'default' : 'outline'}
               onClick={() => onViewModeChange('combined')}
-              className="h-7 px-2 text-xs"
+              className={`h-7 px-2 text-xs ${viewMode !== 'combined' ? 'border-cyan-500/50 text-cyan-400 bg-cyan-500/10' : ''}`}
               data-testid="button-view-combined"
             >
               <Layers className="w-3 h-3 mr-1" />
@@ -258,16 +288,17 @@ export default function FocusedGraphPanel({
         )}
       </div>
 
-      <div className="flex-1 relative">
-        <Canvas>
+      <div className="flex-1 relative flex items-center justify-center">
+        <Canvas style={{ width: '100%', height: '100%' }}>
           <Suspense fallback={null}>
-            <PerspectiveCamera makeDefault position={[0, 3, 6]} fov={50} />
+            <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={50} />
             <OrbitControls 
               enablePan={false}
-              minDistance={3}
-              maxDistance={15}
+              minDistance={2}
+              maxDistance={12}
               autoRotate
               autoRotateSpeed={0.5}
+              target={[0, 0, 0]}
             />
             <FocusedScene
               nodes={subgraph.nodes}

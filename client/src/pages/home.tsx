@@ -285,9 +285,12 @@ export default function Home() {
     }
   };
 
-  const handleNodeSelect = useCallback((node: GraphNode | null, multiSelect: boolean = false) => {
+  const handleNodeSelect = useCallback((node: GraphNode | null, multiSelect?: boolean | { ctrlKey?: boolean; metaKey?: boolean }) => {
     if (node) {
-      toggleNodeSelection(node, multiSelect);
+      const isMultiSelect = typeof multiSelect === 'boolean' 
+        ? multiSelect 
+        : (multiSelect?.ctrlKey || multiSelect?.metaKey || false);
+      toggleNodeSelection(node, isMultiSelect);
     } else {
       clearSelection();
     }
@@ -333,14 +336,15 @@ export default function Home() {
             activeViewIndex={activeViewIndex}
             onViewModeChange={setFocusedViewMode}
             onActiveViewChange={setActiveViewIndex}
-            onNodeSelect={(node: GraphNode) => handleNodeSelect(node, true)}
+            onNodeSelect={(node: GraphNode) => toggleNodeSelection(node, true)}
             onNodeNavigate={(node: GraphNode) => {
-              setPrimaryNode(node.node_id);
+              clearSelection();
+              toggleNodeSelection(node, false);
             }}
           />
         )}
         
-        <div className="flex-1 relative">
+        <div className={`flex-1 relative flex items-center justify-center transition-all duration-300 ${primaryNode && !isAnyModalOpen ? 'mr-96' : ''}`}>
           {!isAnyModalOpen && (
             <Graph3DCanvas
               nodes={filteredNodes}
