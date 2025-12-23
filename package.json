@@ -2,13 +2,18 @@
   "name": "rest-express",
   "version": "1.0.0",
   "type": "module",
+  "main": "electron/dist/main.js",
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "electron:build": "npm run build && cd electron && npm run build",
+    "electron:dev": "npm run electron:build && electron electron/dist/main.js",
+    "electron:pack:mac": "node script/pack-guard.js mac && npm run electron:build && electron-builder --mac dir",
+    "electron:pack:win": "node script/pack-guard.js win && npm run electron:build && electron-builder --win portable"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -100,6 +105,8 @@
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.5",
@@ -108,5 +115,54 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "build": {
+    "appId": "com.graphweaver.app",
+    "productName": "Graph Weaver",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "extraMetadata": {
+      "main": "electron/dist/main.js"
+    },
+    "files": [
+      "electron/dist/**",
+      "electron/package.json",
+      "dist/**",
+      "attached_assets/graph2_1765932308440.db",
+      "!package.json",
+      {
+        "from": "electron-package.json",
+        "to": "package.json"
+      },
+      "!**/*.map",
+      "!**/*.ts",
+      "!**/*.tsx",
+      "!**/node_modules/*/{test,__tests__,tests}/**"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "attached_assets/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "identity": null
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    }
   }
 }

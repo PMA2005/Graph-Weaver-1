@@ -85,8 +85,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  // Use 0.0.0.0 on Replit, localhost for local development
-  const host = process.env.REPL_ID ? "0.0.0.0" : "localhost";
+  // Bind to 127.0.0.1 for Electron, 0.0.0.0 on Replit, localhost otherwise
+  const host = process.env.REPL_ID ? "0.0.0.0" : "127.0.0.1";
   httpServer.listen(port, host, () => {
     log(`serving on http://${host}:${port}`);
   });

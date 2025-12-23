@@ -2,7 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import type { GraphNode, GraphEdge, InsertNode, InsertEdge, GraphData } from '@shared/schema';
 
-const DB_PATH = path.join(process.cwd(), 'attached_assets', 'graph2_1765932308440.db');
+// Use GRAPH_DB_PATH env var if set (Electron production), otherwise fallback to dev path
+const DB_PATH = process.env.GRAPH_DB_PATH || path.join(process.cwd(), 'attached_assets', 'graph2_1765932308440.db');
 
 export interface IStorage {
   getGraphData(): GraphData;

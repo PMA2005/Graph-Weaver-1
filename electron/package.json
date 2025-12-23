@@ -1,0 +1,17 @@
+{
+  "name": "graph-weaver-electron",
+  "version": "1.0.0",
+  "description": "Electron wrapper for Graph Weaver",
+  "main": "dist/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "electron": "^30.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

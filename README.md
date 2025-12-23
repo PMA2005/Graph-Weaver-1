@@ -2,6 +2,8 @@
 
 A 3D interactive graph visualization web application featuring a sci-fi aesthetic with neon colors and dark space backgrounds. View and manage relationships between people and projects with full CRUD operations.
 
+Available as both a web application and portable desktop apps for Windows and macOS.
+
 ## Features
 
 - **3D Graph Visualization** - Interactive graph using React Three Fiber
@@ -10,6 +12,13 @@ A 3D interactive graph visualization web application featuring a sci-fi aestheti
 - **Filtered Views** - View individual person activities or project team compositions
 - **Custom Relationships** - Create your own relationship types
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
+- **Portable Desktop Apps** - Zero-install executables for Windows and macOS
+
+## Quick Start
+
+**Want a desktop app?** See [Portable Desktop Builds](#portable-desktop-builds) below.
+
+**Want to develop?** Continue reading for local Node.js setup.
 
 ## Running Locally
 
@@ -143,3 +152,70 @@ SQLite is not pre-installed on Windows. You can either:
 - **Backend**: Express.js
 - **Database**: SQLite (better-sqlite3)
 - **Build Tool**: Vite
+- **Desktop**: Electron
+
+## Portable Desktop Builds
+
+Graph Weaver can be packaged as portable desktop applications with zero installation required.
+
+### End User Experience
+
+1. Download the appropriate file for your platform
+2. Double-click to launch
+3. App opens immediately with no setup
+
+**No Node.js, no terminal, no installer needed.**
+
+### Building Desktop Apps
+
+Desktop builds must be created on the native platform due to SQLite native modules.
+
+#### macOS Build (run on macOS only)
+
+```bash
+npm install
+npm run electron:pack:mac
+```
+
+Output: `release/mac/Graph Weaver.app`
+
+**First Launch on macOS:**
+- Right-click the app and select "Open"
+- Click "Open" on the Gatekeeper warning
+- Subsequent launches work normally via double-click
+
+#### Windows Build (run on Windows only)
+
+```bash
+npm install
+npm run electron:pack:win
+```
+
+Output: `release/Graph Weaver.exe`
+
+**Note:** The .exe is a portable executable - no installation required.
+
+### Desktop App Data Storage
+
+User data is stored separately from the app:
+
+- **Windows**: `%APPDATA%/Graph Weaver/graph.db`
+- **macOS**: `~/Library/Application Support/Graph Weaver/graph.db`
+
+Data persists between app updates and is never written to the installation directory.
+
+### Development Mode
+
+To test Electron integration during development:
+
+```bash
+# Terminal 1: Start the web server
+npm run dev
+
+# Terminal 2: Launch Electron (loads from localhost:5000)
+npm run electron:dev
+```
+
+---
+
+## Developer Setup - Running Locally

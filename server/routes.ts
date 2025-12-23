@@ -8,6 +8,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Health check endpoint for Electron
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+  
   app.get("/api/graph", (_req, res) => {
     try {
       const data = storage.getGraphData();
