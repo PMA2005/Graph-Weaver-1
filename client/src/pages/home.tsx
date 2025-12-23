@@ -312,7 +312,7 @@ export default function Home() {
     );
   }
 
-  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget;
+  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget || showHelp;
   const isSidebarOpen = selectedNodes.length > 0;
 
   return (
