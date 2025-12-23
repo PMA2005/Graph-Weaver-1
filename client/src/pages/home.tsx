@@ -326,8 +326,22 @@ export default function Home() {
         onAddNode={() => setShowAddNode(true)}
       />
 
-      <div className="absolute inset-0 pt-16 pb-20 flex">
-        {selectedNodes.length > 0 && (
+      <div className="absolute inset-0 pt-16 pb-20">
+        <div className="w-full h-full relative flex items-center justify-center">
+          {!isAnyModalOpen && (
+            <Graph3DCanvas
+              nodes={filteredNodes}
+              edges={filteredEdges}
+              selectedNode={primaryNode}
+              selectedNodeIds={selectedNodeIds}
+              onNodeSelect={handleNodeSelect}
+            />
+          )}
+        </div>
+      </div>
+
+      {selectedNodes.length > 0 && (
+        <div className="absolute top-16 bottom-20 left-0">
           <FocusedGraphPanel
             subgraph={focusedSubgraph}
             selectedNodes={selectedNodes}
@@ -342,20 +356,8 @@ export default function Home() {
               toggleNodeSelection(node, false);
             }}
           />
-        )}
-        
-        <div className="flex-1 relative flex items-center justify-center">
-          {!isAnyModalOpen && (
-            <Graph3DCanvas
-              nodes={filteredNodes}
-              edges={filteredEdges}
-              selectedNode={primaryNode}
-              selectedNodeIds={selectedNodeIds}
-              onNodeSelect={handleNodeSelect}
-            />
-          )}
         </div>
-      </div>
+      )}
 
       {primaryNode && (
         <NodeDetailsSidebar

@@ -1,8 +1,14 @@
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, PerspectiveCamera, Html, Text } from '@react-three/drei';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrbitControls, Stars, Html, Text } from '@react-three/drei';
 import { Suspense, useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+
+const savedCameraState = {
+  position: new THREE.Vector3(0, 5, 15),
+  target: new THREE.Vector3(0, 0, 0),
+  initialized: false,
+};
 
 interface GraphNode {
   node_id: string;
@@ -270,6 +276,43 @@ interface SceneProps {
   onNodeSelect: (node: GraphNode | null, event?: { ctrlKey?: boolean; metaKey?: boolean }) => void;
 }
 
+function CameraPersistence({ controlsRef }: { controlsRef: React.RefObject<OrbitControlsImpl> }) {
+  const { camera } = useThree();
+  const lastSaveRef = useRef(0);
+  
+  useEffect(() => {
+    if (savedCameraState.initialized) {
+      camera.position.copy(savedCameraState.position);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(savedCameraState.target);
+        controlsRef.current.update();
+      }
+    } else {
+      camera.position.set(0, 5, 15);
+      savedCameraState.position.copy(camera.position);
+      savedCameraState.initialized = true;
+    }
+    (camera as THREE.PerspectiveCamera).fov = 60;
+    (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+  }, [camera, controlsRef]);
+
+  useEffect(() => {
+    const saveState = () => {
+      const now = Date.now();
+      if (now - lastSaveRef.current > 100 && controlsRef.current) {
+        savedCameraState.position.copy(controlsRef.current.object.position);
+        savedCameraState.target.copy(controlsRef.current.target);
+        lastSaveRef.current = now;
+      }
+    };
+
+    const interval = setInterval(saveState, 100);
+    return () => clearInterval(interval);
+  }, [controlsRef]);
+  
+  return null;
+}
+
 function Scene({ 
   nodes, 
   edges, 
@@ -314,6 +357,10 @@ function Scene({
     if (idleTimeoutRef.current) {
       clearTimeout(idleTimeoutRef.current);
     }
+    if (controlsRef.current) {
+      savedCameraState.position.copy(controlsRef.current.object.position);
+      savedCameraState.target.copy(controlsRef.current.target);
+    }
     idleTimeoutRef.current = setTimeout(() => {
       setIsAutoRotating(true);
     }, 3000);
@@ -329,7 +376,7 @@ function Scene({
 
   return (
     <>
-      <PerspectiveCamera makeDefault position={[0, 5, 15]} fov={60} />
+      <CameraPersistence controlsRef={controlsRef} />
       <OrbitControls 
         ref={controlsRef}
         enablePan={true}
