@@ -115,15 +115,13 @@ export default function Home() {
     ? nodes.filter(n => n.node_type.toLowerCase() === typeFilter)
     : nodes;
 
+  const filteredNodeIds = new Set(filteredNodes.map(n => n.node_id));
+
   const filteredEdges = typeFilter
-    ? edges.filter(e => {
-        const sourceNode = nodes.find(n => n.node_id === e.source_node);
-        const targetNode = nodes.find(n => n.node_id === e.target_node);
-        return (
-          sourceNode?.node_type.toLowerCase() === typeFilter ||
-          targetNode?.node_type.toLowerCase() === typeFilter
-        );
-      })
+    ? edges.filter(e => 
+        filteredNodeIds.has(e.source_node) && 
+        filteredNodeIds.has(e.target_node)
+      )
     : edges;
 
   const handleResetView = () => {
