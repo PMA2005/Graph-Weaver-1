@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, PerspectiveCamera, Html, Text } from '@react-three/drei';
-import { Suspense, useState, useRef, useMemo } from 'react';
+import { Suspense, useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 interface GraphNode {
   node_id: string;
@@ -277,6 +278,9 @@ function Scene({
   onNodeSelect 
 }: SceneProps) {
   const positions = useMemo(() => calculateNodePositions(nodes, edges), [nodes, edges]);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const connectedNodeIds = new Set<string>();
   if (selectedNode) {
@@ -298,22 +302,50 @@ function Scene({
     }
   };
 
+  const handleInteractionStart = useCallback(() => {
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+    setIsAutoRotating(false);
+  }, []);
+
+  const handleInteractionEnd = useCallback(() => {
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+    }
+    idleTimeoutRef.current = setTimeout(() => {
+      setIsAutoRotating(true);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 5, 15]} fov={60} />
       <OrbitControls 
+        ref={controlsRef}
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
         minDistance={5}
         maxDistance={30}
-        autoRotate
+        autoRotate={isAutoRotating}
         autoRotateSpeed={0.3}
         enableDamping
         dampingFactor={0.05}
         minPolarAngle={0}
         maxPolarAngle={Math.PI}
         rotateSpeed={0.8}
+        onStart={handleInteractionStart}
+        onEnd={handleInteractionEnd}
       />
       
       <ambientLight intensity={0.3} />
