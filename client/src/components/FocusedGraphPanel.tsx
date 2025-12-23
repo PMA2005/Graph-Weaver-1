@@ -255,7 +255,7 @@ export default function FocusedGraphPanel({
 
   return (
     <div 
-      className="w-80 h-full flex flex-col border-r border-cyan-500/20"
+      className="w-[420px] h-full flex flex-col border-r border-cyan-500/20"
       style={{ background: 'rgba(10, 14, 39, 0.9)' }}
       data-testid="panel-focused-graph"
     >

@@ -344,7 +344,7 @@ export default function Home() {
           />
         )}
         
-        <div className={`flex-1 relative flex items-center justify-center transition-all duration-300 ${primaryNode && !isAnyModalOpen ? 'mr-96' : ''}`}>
+        <div className="flex-1 relative flex items-center justify-center transition-all duration-300">
           {!isAnyModalOpen && (
             <Graph3DCanvas
               nodes={filteredNodes}
@@ -355,21 +355,21 @@ export default function Home() {
             />
           )}
         </div>
-      </div>
 
-      {primaryNode && (
-        <NodeDetailsSidebar
-          node={primaryNode}
-          edges={edges}
-          allNodes={nodes}
-          onClose={clearSelection}
-          onNodeNavigate={(node) => handleNodeSelect(node, false)}
-          onEdit={() => setShowEditNode(true)}
-          onDelete={() => setDeleteTarget({ type: 'node', item: primaryNode })}
-          onAddRelationship={() => setShowAddEdge(true)}
-          onRemoveRelationship={(edge) => setDeleteTarget({ type: 'edge', item: edge })}
-        />
-      )}
+        {primaryNode && !isAnyModalOpen && (
+          <NodeDetailsSidebar
+            node={primaryNode}
+            edges={edges}
+            allNodes={nodes}
+            onClose={clearSelection}
+            onNodeNavigate={(node) => handleNodeSelect(node, false)}
+            onEdit={() => setShowEditNode(true)}
+            onDelete={() => setDeleteTarget({ type: 'node', item: primaryNode })}
+            onAddRelationship={() => setShowAddEdge(true)}
+            onRemoveRelationship={(edge) => setDeleteTarget({ type: 'edge', item: edge })}
+          />
+        )}
+      </div>
 
       <GraphLegend
         onFilterType={setTypeFilter}

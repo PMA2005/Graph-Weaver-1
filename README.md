@@ -6,13 +6,53 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ## Features
 
-- **3D Graph Visualization** - Interactive graph using React Three Fiber
-- **Sci-Fi Aesthetic** - Cyan nodes for people, purple for projects, color-coded relationships
-- **Full CRUD Operations** - Add, edit, and delete nodes and relationships
+### Core Visualization
+- **3D Graph Visualization** - Interactive graph using React Three Fiber with smooth animations
+- **Sci-Fi Aesthetic** - Cyan nodes for people, purple for projects, neon color-coded relationships
+- **Node Labels** - Display names shown above each node in the visualization
+- **Edge Labels** - Relationship types displayed on connection lines
 - **Filtered Views** - View individual person activities or project team compositions
+
+### Multi-Select & Focused Graph Panel
+- **Multi-Select Support** - Hold Ctrl (Windows/Linux) or Cmd (macOS) and click to select multiple nodes
+- **Focused Graph Panel** - Left panel shows neighborhood subgraph of selected node(s)
+- **Single/All View Modes** - Toggle between viewing one node's neighborhood or combined neighborhoods of all selected nodes
+- **Node Navigation** - Click nodes in the focused panel to navigate to their neighborhood
+- **Interactive 3D Mini-Graph** - Auto-rotating 3D view with orbit controls in the focused panel
+
+### Data Management
+- **Full CRUD Operations** - Add, edit, and delete nodes and relationships
+- **Cascade Delete** - Deleting a node automatically removes all its relationships
 - **Custom Relationships** - Create your own relationship types
+- **SQLite Database** - Persistent data storage with included sample data
+
+### User Interface
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
+- **Responsive Layout** - Main graph centers automatically when side panels open/close
+- **Details Sidebar** - View and edit node details, see all connections
+- **Connection Management** - Add and remove relationships from the sidebar
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
+
+## Usage Guide
+
+### Basic Interaction
+- **Click a node** - Select it and open the details sidebar
+- **Drag** - Rotate the 3D view
+- **Scroll** - Zoom in/out
+- **Double-click background** - Deselect all nodes
+
+### Multi-Select
+- **Ctrl+Click (Windows/Linux)** or **Cmd+Click (macOS)** - Add/remove nodes from selection
+- Selected nodes show in the Focused Graph Panel on the left
+- Use "Single" mode to view one node's neighborhood at a time
+- Use "All" mode to see combined neighborhoods of all selected nodes
+
+### Managing Data
+- **Add Node** - Click "+ Add Node" in the top navigation
+- **Edit Node** - Select a node, then click "Edit" in the sidebar
+- **Delete Node** - Select a node, then click "Delete" in the sidebar
+- **Add Relationship** - Select a node, then click "+ Add" in the connections section
+- **Remove Relationship** - Click the X next to any connection in the sidebar
 
 ## Quick Start
 
