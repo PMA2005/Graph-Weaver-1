@@ -316,7 +316,7 @@ export default function FocusedGraphPanel({
       <div className="flex-1 relative flex items-center justify-center">
         <Canvas style={{ width: '100%', height: '100%' }}>
           <Suspense fallback={null}>
-            <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={50} />
+            <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={50} />
             <OrbitControls 
               enablePan={false}
               minDistance={2}
