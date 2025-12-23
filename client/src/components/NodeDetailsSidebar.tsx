@@ -106,7 +106,7 @@ export default function NodeDetailsSidebar({
 
   return (
     <div 
-      className="w-[420px] h-full shrink-0 p-4 animate-in slide-in-from-right duration-300"
+      className="fixed right-4 top-20 bottom-24 w-96 z-50 animate-in slide-in-from-right duration-300"
       data-testid="sidebar-node-details"
     >
       <div 

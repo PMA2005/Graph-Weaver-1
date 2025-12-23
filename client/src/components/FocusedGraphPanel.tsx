@@ -85,9 +85,9 @@ function FocusedNode({
     <group position={position}>
       <mesh onClick={(e) => { e.stopPropagation(); if (e.ctrlKey || e.metaKey) { onCtrlClick(); } else { onClick(); } }} scale={scale}>
         {isPerson ? (
-          <sphereGeometry args={[0.25, 16, 16]} />
+          <sphereGeometry args={[0.2, 16, 16]} />
         ) : (
-          <boxGeometry args={[0.4, 0.4, 0.4]} />
+          <boxGeometry args={[0.3, 0.3, 0.3]} />
         )}
         <meshStandardMaterial 
           color={color} 
@@ -316,7 +316,7 @@ export default function FocusedGraphPanel({
       <div className="flex-1 relative flex items-center justify-center">
         <Canvas style={{ width: '100%', height: '100%' }}>
           <Suspense fallback={null}>
-            <PerspectiveCamera makeDefault position={[0, 0, 6]} fov={50} />
+            <PerspectiveCamera makeDefault position={[0, 0, 8]} fov={60} />
             <OrbitControls 
               enablePan={false}
               minDistance={2}
