@@ -3,7 +3,7 @@ import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
 import { Suspense, useMemo } from 'react';
 import * as THREE from 'three';
 import { Button } from '@/components/ui/button';
-import { User, Folder, Layers, Eye } from 'lucide-react';
+import { User, Folder, Layers, Eye, X } from 'lucide-react';
 
 interface GraphNode {
   node_id: string;
@@ -288,25 +288,43 @@ export default function FocusedGraphPanel({
           </div>
         </div>
 
-        {viewMode === 'single' && selectedNodes.length > 1 && (
+        {selectedNodes.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {selectedNodes.map((node, index) => {
               const Icon = node.node_type.toLowerCase() === 'person' ? User : Folder;
-              const isActive = index === activeViewIndex;
+              const isActive = viewMode === 'single' && index === activeViewIndex;
               return (
-                <Button
-                  key={node.node_id}
-                  size="sm"
-                  variant={isActive ? 'default' : 'outline'}
-                  onClick={() => onActiveViewChange(index)}
-                  className={`h-6 px-2 text-xs ${isActive ? '' : 'border-cyan-500/30 text-cyan-400'}`}
-                  data-testid={`button-switch-node-${index}`}
+                <div 
+                  key={node.node_id} 
+                  className={`flex items-center gap-0.5 h-6 pl-2 pr-1 text-xs rounded-md ${
+                    isActive 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'border border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+                  }`}
                 >
-                  <Icon className="w-3 h-3 mr-1" />
-                  {node.display_name.length > 10 
-                    ? node.display_name.slice(0, 10) + '...' 
-                    : node.display_name}
-                </Button>
+                  <button
+                    onClick={() => viewMode === 'single' && onActiveViewChange(index)}
+                    className="flex items-center gap-1"
+                    data-testid={`button-switch-node-${index}`}
+                  >
+                    <Icon className="w-3 h-3" />
+                    <span>
+                      {node.display_name.length > 10 
+                        ? node.display_name.slice(0, 10) + '...' 
+                        : node.display_name}
+                    </span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNodeSelect(node);
+                    }}
+                    className="p-0.5 rounded hover:bg-red-500/30 transition-colors"
+                    data-testid={`button-remove-node-${index}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               );
             })}
           </div>
