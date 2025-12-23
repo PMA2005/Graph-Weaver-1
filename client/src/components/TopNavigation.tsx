@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ThemeToggle } from '@/components/ThemeProvider';
 
 interface TopNavigationProps {
   onResetView?: () => void;
@@ -143,6 +144,15 @@ export default function TopNavigation({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Settings</TooltipContent>
+        </Tooltip>
+
+        <div className="w-px h-6 bg-cyan-500/30 mx-2" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ThemeToggle />
+          </TooltipTrigger>
+          <TooltipContent>Toggle Theme</TooltipContent>
         </Tooltip>
       </div>
     </header>
