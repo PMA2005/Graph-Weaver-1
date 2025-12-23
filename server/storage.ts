@@ -23,7 +23,10 @@ export class SQLiteStorage implements IStorage {
 
   constructor() {
     this.db = new Database(DB_PATH);
+    // Enable foreign key enforcement in SQLite
+    this.db.pragma('foreign_keys = ON');
     this.initializeTables();
+    this.migrateEdgesTable();
   }
 
   private initializeTables() {
@@ -55,9 +58,53 @@ export class SQLiteStorage implements IStorage {
           relationship_type TEXT NOT NULL,
           weight REAL,
           timestamp TEXT,
-          PRIMARY KEY (source_node, target_node, relationship_type)
+          PRIMARY KEY (source_node, target_node, relationship_type),
+          FOREIGN KEY (source_node) REFERENCES nodes(node_id) ON DELETE CASCADE,
+          FOREIGN KEY (target_node) REFERENCES nodes(node_id) ON DELETE CASCADE
         )
       `);
+    }
+  }
+
+  private migrateEdgesTable() {
+    // Check if edges table already has foreign key constraints
+    const tableInfo = this.db.prepare("PRAGMA foreign_key_list(edges)").all();
+    
+    if (tableInfo.length === 0) {
+      // Need to migrate: recreate edges table with foreign key constraints
+      console.log('[storage] Migrating edges table to add foreign key constraints with CASCADE delete...');
+      
+      const transaction = this.db.transaction(() => {
+        // 1. Create new table with proper constraints
+        this.db.exec(`
+          CREATE TABLE edges_new (
+            source_node TEXT NOT NULL,
+            target_node TEXT NOT NULL,
+            relationship_type TEXT NOT NULL,
+            weight REAL,
+            timestamp TEXT,
+            PRIMARY KEY (source_node, target_node, relationship_type),
+            FOREIGN KEY (source_node) REFERENCES nodes(node_id) ON DELETE CASCADE,
+            FOREIGN KEY (target_node) REFERENCES nodes(node_id) ON DELETE CASCADE
+          )
+        `);
+        
+        // 2. Copy valid data (only edges where both nodes exist)
+        this.db.exec(`
+          INSERT INTO edges_new (source_node, target_node, relationship_type, weight, timestamp)
+          SELECT e.source_node, e.target_node, e.relationship_type, e.weight, e.timestamp
+          FROM edges e
+          WHERE EXISTS (SELECT 1 FROM nodes n WHERE n.node_id = e.source_node)
+            AND EXISTS (SELECT 1 FROM nodes n WHERE n.node_id = e.target_node)
+        `);
+        
+        // 3. Drop old table and rename new one
+        this.db.exec('DROP TABLE edges');
+        this.db.exec('ALTER TABLE edges_new RENAME TO edges');
+      });
+      
+      transaction();
+      console.log('[storage] Migration complete: edges table now has CASCADE delete constraints');
     }
   }
 
@@ -123,11 +170,7 @@ export class SQLiteStorage implements IStorage {
   }
 
   deleteNode(nodeId: string): boolean {
-    const deleteEdges = this.db.prepare(
-      'DELETE FROM edges WHERE source_node = ? OR target_node = ?'
-    );
-    deleteEdges.run(nodeId, nodeId);
-
+    // Foreign key CASCADE delete automatically removes related edges
     const deleteNode = this.db.prepare('DELETE FROM nodes WHERE node_id = ?');
     const result = deleteNode.run(nodeId);
     return result.changes > 0;
