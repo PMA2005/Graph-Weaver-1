@@ -344,7 +344,7 @@ export default function Home() {
           />
         )}
         
-        <div className={`flex-1 relative flex items-center justify-center transition-all duration-300 ${primaryNode && !isAnyModalOpen ? 'mr-[400px]' : ''}`}>
+        <div className="flex-1 relative flex items-center justify-center">
           {!isAnyModalOpen && (
             <Graph3DCanvas
               nodes={filteredNodes}
