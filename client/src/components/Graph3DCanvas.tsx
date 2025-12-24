@@ -113,16 +113,17 @@ function useForceSimulation(
       existingPositions.set(n.id, { x: n.x, y: n.y, z: n.z });
     });
 
-    const baseRadius = Math.max(8, 5 + Math.sqrt(nodes.length) * 2);
+    const baseRadius = Math.max(20, 15 + Math.sqrt(nodes.length) * 5);
     
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
       const angle = (i / nodes.length) * Math.PI * 2;
-      const radius = baseRadius + Math.random() * (baseRadius * 0.5);
+      const verticalAngle = ((i % 3) - 1) * 0.4;
+      const radius = baseRadius + Math.random() * (baseRadius * 0.3);
       return {
         id: node.node_id,
         x: existing?.x ?? Math.cos(angle) * radius,
-        y: existing?.y ?? (Math.random() - 0.5) * baseRadius * 0.5,
+        y: existing?.y ?? Math.sin(verticalAngle) * (baseRadius * 0.4) + (Math.random() - 0.5) * 8,
         z: existing?.z ?? Math.sin(angle) * radius,
         node,
       };
@@ -141,9 +142,9 @@ function useForceSimulation(
 
     nodesRef.current = simNodes;
 
-    const labelPadding = Math.max(2, 1.5 + nodes.length * 0.05);
-    const chargeStrength = Math.min(-150, -60 - nodes.length * 2);
-    const linkDistance = Math.max(5, 3 + nodes.length * 0.15);
+    const collisionRadius = Math.max(4, 3 + nodes.length * 0.1);
+    const chargeStrength = Math.min(-300, -150 - nodes.length * 5);
+    const linkDistance = Math.max(12, 8 + nodes.length * 0.4);
 
     const simulation = forceSimulation(simNodes, 3)
       .force('link', forceLink(simLinks)
@@ -151,9 +152,9 @@ function useForceSimulation(
         .distance(linkDistance)
         .strength(0.3)
       )
-      .force('charge', forceManyBody().strength(chargeStrength))
-      .force('center', forceCenter(0, 0, 0))
-      .force('collision', forceCollide().radius(labelPadding))
+      .force('charge', forceManyBody().strength(chargeStrength).distanceMax(baseRadius * 3))
+      .force('center', forceCenter(0, 0, 0).strength(0.05))
+      .force('collision', forceCollide().radius(collisionRadius).strength(0.8))
       .alphaDecay(0.02)
       .velocityDecay(0.3);
 
@@ -217,14 +218,15 @@ function AnimatedNode3D({
     }
   });
   
+  const nodeSize = shape === 'box' ? 1.2 : 0.8;
   const geometry = shape === 'sphere' 
-    ? <sphereGeometry args={[0.4, 32, 32]} />
+    ? <sphereGeometry args={[nodeSize, 32, 32]} />
     : shape === 'box'
-    ? <boxGeometry args={[0.6, 0.6, 0.6]} />
-    : <octahedronGeometry args={[0.45]} />;
+    ? <boxGeometry args={[nodeSize * 1.4, nodeSize * 1.4, nodeSize * 1.4]} />
+    : <octahedronGeometry args={[nodeSize]} />;
 
-  const labelScale = Math.max(0.6, Math.min(1.2, 12 / cameraDistance));
-  const showLabel = cameraDistance < 25 || isSelected || isFocused || hovered;
+  const labelScale = Math.max(0.8, Math.min(1.5, 30 / cameraDistance));
+  const showLabel = true;
 
   return (
     <group ref={groupRef}>
@@ -262,32 +264,32 @@ function AnimatedNode3D({
       
       {showLabel && (
         <Html
-          position={[0, 0, 0]}
+          position={[0, nodeSize + 0.8, 0]}
           center
-          distanceFactor={8}
+          distanceFactor={15}
           style={{ 
             pointerEvents: 'none',
             transform: `scale(${labelScale})`,
-            opacity: isFaded ? 0.4 : 1,
+            opacity: isFaded ? 0.3 : 1,
           }}
         >
           <div 
-            className="text-center whitespace-nowrap select-none px-2 py-1 rounded"
+            className="text-center whitespace-nowrap select-none px-3 py-1.5 rounded-md"
             style={{ 
-              background: 'rgba(0, 0, 0, 0.75)',
-              border: `1px solid ${color}40`,
-              boxShadow: `0 0 8px ${color}30`,
+              background: 'rgba(10, 14, 39, 0.9)',
+              border: `2px solid ${color}`,
+              boxShadow: `0 0 12px ${color}60, 0 0 24px ${color}30`,
             }}
           >
             <div 
-              className="font-display text-sm font-bold leading-tight"
-              style={{ color: '#ffffff' }}
+              className="font-display text-base font-bold leading-tight"
+              style={{ color: '#ffffff', textShadow: `0 0 8px ${color}` }}
             >
               {node.display_name}
             </div>
             <div 
-              className="font-tech text-xs uppercase tracking-wider"
-              style={{ color: color }}
+              className="font-tech text-sm uppercase tracking-wider mt-0.5"
+              style={{ color: color, fontWeight: 600 }}
             >
               {typeLabel}
             </div>
@@ -622,7 +624,7 @@ export default function Graph3DCanvas({
       <Canvas
         onPointerMissed={handleBackgroundClick}
         gl={{ antialias: true, alpha: true }}
-        camera={{ position: [0, 12, 35], fov: 60 }}
+        camera={{ position: [0, 25, 70], fov: 60 }}
       >
         <Suspense fallback={null}>
           <Scene 
