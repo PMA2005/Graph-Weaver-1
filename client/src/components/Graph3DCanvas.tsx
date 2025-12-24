@@ -113,14 +113,16 @@ function useForceSimulation(
       existingPositions.set(n.id, { x: n.x, y: n.y, z: n.z });
     });
 
+    const baseRadius = Math.max(8, 5 + Math.sqrt(nodes.length) * 2);
+    
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
       const angle = (i / nodes.length) * Math.PI * 2;
-      const radius = 5 + Math.random() * 3;
+      const radius = baseRadius + Math.random() * (baseRadius * 0.5);
       return {
         id: node.node_id,
         x: existing?.x ?? Math.cos(angle) * radius,
-        y: existing?.y ?? (Math.random() - 0.5) * 4,
+        y: existing?.y ?? (Math.random() - 0.5) * baseRadius * 0.5,
         z: existing?.z ?? Math.sin(angle) * radius,
         node,
       };
@@ -139,9 +141,9 @@ function useForceSimulation(
 
     nodesRef.current = simNodes;
 
-    const labelPadding = Math.max(1.5, nodes.length * 0.03);
-    const chargeStrength = Math.min(-80, -30 - nodes.length * 0.5);
-    const linkDistance = Math.max(3, 2 + nodes.length * 0.05);
+    const labelPadding = Math.max(2, 1.5 + nodes.length * 0.05);
+    const chargeStrength = Math.min(-150, -60 - nodes.length * 2);
+    const linkDistance = Math.max(5, 3 + nodes.length * 0.15);
 
     const simulation = forceSimulation(simNodes, 3)
       .force('link', forceLink(simLinks)
@@ -620,7 +622,7 @@ export default function Graph3DCanvas({
       <Canvas
         onPointerMissed={handleBackgroundClick}
         gl={{ antialias: true, alpha: true }}
-        camera={{ position: [0, 5, 15], fov: 60 }}
+        camera={{ position: [0, 12, 35], fov: 60 }}
       >
         <Suspense fallback={null}>
           <Scene 
