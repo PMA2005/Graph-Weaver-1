@@ -118,12 +118,13 @@ function useForceSimulation(
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
       const angle = (i / nodes.length) * Math.PI * 2;
-      const verticalAngle = ((i % 3) - 1) * 0.4;
       const radius = baseRadius + Math.random() * (baseRadius * 0.3);
+      const isProject = node.node_type.toLowerCase() === 'project';
+      const verticalOffset = isProject ? 15 : -15;
       return {
         id: node.node_id,
         x: existing?.x ?? Math.cos(angle) * radius,
-        y: existing?.y ?? Math.sin(verticalAngle) * (baseRadius * 0.4) + (Math.random() - 0.5) * 8,
+        y: existing?.y ?? verticalOffset + (Math.random() - 0.5) * 8,
         z: existing?.z ?? Math.sin(angle) * radius,
         node,
       };
@@ -142,9 +143,22 @@ function useForceSimulation(
 
     nodesRef.current = simNodes;
 
-    const collisionRadius = Math.max(4, 3 + nodes.length * 0.1);
+    const collisionRadius = Math.max(6, 5 + nodes.length * 0.1);
     const chargeStrength = Math.min(-300, -150 - nodes.length * 5);
     const linkDistance = Math.max(12, 8 + nodes.length * 0.4);
+
+    const yForce = () => {
+      let nodes: SimNode[] = [];
+      const force = (alpha: number) => {
+        nodes.forEach(node => {
+          const isProject = node.node.node_type.toLowerCase() === 'project';
+          const targetY = isProject ? 18 : -18;
+          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.15;
+        });
+      };
+      force.initialize = (n: SimNode[]) => { nodes = n; };
+      return force;
+    };
 
     const simulation = forceSimulation(simNodes, 3)
       .force('link', forceLink(simLinks)
@@ -153,7 +167,8 @@ function useForceSimulation(
         .strength(0.3)
       )
       .force('charge', forceManyBody().strength(chargeStrength).distanceMax(baseRadius * 3))
-      .force('center', forceCenter(0, 0, 0).strength(0.05))
+      .force('center', forceCenter(0, 0, 0).strength(0.03))
+      .force('yAxis', yForce())
       .force('collision', forceCollide().radius(collisionRadius).strength(0.8))
       .alphaDecay(0.02)
       .velocityDecay(0.3);
@@ -218,7 +233,7 @@ function AnimatedNode3D({
     }
   });
   
-  const nodeSize = shape === 'box' ? 1.2 : 0.8;
+  const nodeSize = shape === 'box' ? 2.0 : 1.5;
   const geometry = shape === 'sphere' 
     ? <sphereGeometry args={[nodeSize, 32, 32]} />
     : shape === 'box'
