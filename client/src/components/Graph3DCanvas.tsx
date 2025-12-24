@@ -429,8 +429,12 @@ function Scene({
   const positions = useForceSimulation(nodes, edges, true);
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
-  const [cameraDistance, setCameraDistance] = useState(15);
+  const [cameraDistance, setCameraDistance] = useState(70);
   const idleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitialFramed = useRef(false);
+  const targetPositionRef = useRef(new THREE.Vector3(0, 0, 0));
+  const targetCameraRef = useRef(new THREE.Vector3(0, 25, 70));
+  const isTransitioning = useRef(false);
   const { camera } = useThree();
   
   const connectedNodeIds = useMemo(() => {
@@ -448,10 +452,98 @@ function Scene({
     return connected;
   }, [edges, selectedNodeIds]);
 
-  useFrame(() => {
+  // Compute graph bounds and centroid
+  const graphBounds = useMemo(() => {
+    const posArray = Object.values(positions);
+    if (posArray.length === 0) return null;
+    
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    
+    posArray.forEach(([x, y, z]) => {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+    });
+    
+    const centroid = new THREE.Vector3(
+      (minX + maxX) / 2,
+      (minY + maxY) / 2,
+      (minZ + maxZ) / 2
+    );
+    
+    const radius = Math.max(
+      maxX - minX,
+      maxY - minY,
+      maxZ - minZ
+    ) / 2 + 10;
+    
+    return { centroid, radius };
+  }, [positions]);
+
+  // Auto-frame graph on initial load
+  useEffect(() => {
+    if (!hasInitialFramed.current && graphBounds && Object.keys(positions).length >= nodes.length * 0.8) {
+      hasInitialFramed.current = true;
+      const { centroid, radius } = graphBounds;
+      const optimalDistance = Math.max(40, radius * 2.5);
+      
+      targetPositionRef.current.copy(centroid);
+      targetCameraRef.current.set(centroid.x, centroid.y + radius * 0.5, centroid.z + optimalDistance);
+      isTransitioning.current = true;
+    }
+  }, [graphBounds, positions, nodes.length]);
+
+  // Center on selected nodes
+  useEffect(() => {
+    if (selectedNodeIds.size === 0 || !hasInitialFramed.current) return;
+    
+    const selectedPositions: [number, number, number][] = [];
+    selectedNodeIds.forEach(id => {
+      const pos = positions[id];
+      if (pos) selectedPositions.push(pos);
+    });
+    
+    if (selectedPositions.length === 0) return;
+    
+    const centroid = new THREE.Vector3(
+      selectedPositions.reduce((sum, p) => sum + p[0], 0) / selectedPositions.length,
+      selectedPositions.reduce((sum, p) => sum + p[1], 0) / selectedPositions.length,
+      selectedPositions.reduce((sum, p) => sum + p[2], 0) / selectedPositions.length
+    );
+    
+    targetPositionRef.current.copy(centroid);
+    
+    // Move camera to face the selected node
+    const currentDir = camera.position.clone().sub(controlsRef.current?.target || new THREE.Vector3()).normalize();
+    const distance = Math.max(25, cameraDistance * 0.6);
+    targetCameraRef.current.copy(centroid).add(currentDir.multiplyScalar(distance));
+    
+    isTransitioning.current = true;
+  }, [selectedNodeIds, positions]);
+
+  // Animate camera and controls target with convergence check
+  useFrame((_, delta) => {
     const dist = camera.position.length();
     if (Math.abs(dist - cameraDistance) > 0.5) {
       setCameraDistance(dist);
+    }
+    
+    if (controlsRef.current && isTransitioning.current) {
+      const lerpFactor = Math.min(1, delta * 4);
+      
+      controlsRef.current.target.lerp(targetPositionRef.current, lerpFactor);
+      camera.position.lerp(targetCameraRef.current, lerpFactor);
+      controlsRef.current.update();
+      
+      // Check convergence - stop when close enough
+      const targetDist = controlsRef.current.target.distanceTo(targetPositionRef.current);
+      const cameraDist = camera.position.distanceTo(targetCameraRef.current);
+      
+      if (targetDist < 0.5 && cameraDist < 0.5) {
+        isTransitioning.current = false;
+      }
     }
   });
 
@@ -497,8 +589,8 @@ function Scene({
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
-        minDistance={3}
-        maxDistance={50}
+        minDistance={10}
+        maxDistance={graphBounds ? Math.max(100, graphBounds.radius * 4) : 150}
         autoRotate={isAutoRotating && !isFocusMode}
         autoRotateSpeed={0.3}
         enableDamping

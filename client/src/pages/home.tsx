@@ -26,6 +26,7 @@ export default function Home() {
   const [showEditNode, setShowEditNode] = useState(false);
   const [showAddEdge, setShowAddEdge] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
+  const [graphKey, setGraphKey] = useState(0);
   const { toast } = useToast();
 
   const toggleNodeSelection = useCallback((node: GraphNode, multiSelect: boolean = false) => {
@@ -217,6 +218,7 @@ export default function Home() {
   const handleResetView = () => {
     clearSelection();
     setTypeFilter(null);
+    setGraphKey(k => k + 1);
   };
 
   const handleExport = () => {
@@ -329,6 +331,7 @@ export default function Home() {
         <div className="w-full h-full relative flex items-center justify-center">
           {!isAnyModalOpen && (
             <Graph3DCanvas
+              key={graphKey}
               nodes={filteredNodes}
               edges={filteredEdges}
               selectedNode={primaryNode}
