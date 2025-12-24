@@ -240,7 +240,7 @@ function AnimatedNode3D({
     ? <boxGeometry args={[nodeSize * 1.4, nodeSize * 1.4, nodeSize * 1.4]} />
     : <octahedronGeometry args={[nodeSize]} />;
 
-  const labelScale = Math.max(1.0, Math.min(2.0, 50 / cameraDistance));
+  const labelScale = Math.max(1.5, Math.min(3.5, 100 / cameraDistance));
   const showLabel = true;
 
   return (
@@ -281,7 +281,7 @@ function AnimatedNode3D({
         <Html
           position={[0, nodeSize + 1.2, 0]}
           center
-          distanceFactor={8}
+          distanceFactor={5}
           style={{ 
             pointerEvents: 'none',
             transform: `scale(${labelScale})`,
@@ -329,15 +329,15 @@ function EdgeLabel({
   const formattedLabel = relationshipType.replace(/_/g, ' ');
   const edgeColor = getEdgeColor(relationshipType);
   
-  if (cameraDistance > 80 && !isHighlighted) return null;
+  if (cameraDistance > 120 && !isHighlighted) return null;
   
-  const labelScale = Math.max(0.8, Math.min(1.5, 40 / cameraDistance));
+  const labelScale = Math.max(1.2, Math.min(2.5, 80 / cameraDistance));
   
   return (
     <Html
       position={position}
       center
-      distanceFactor={6}
+      distanceFactor={4}
       style={{ pointerEvents: 'none', transform: `scale(${labelScale})` }}
     >
       <div 
@@ -505,7 +505,7 @@ function Scene({
     if (!hasInitialFramed.current && graphBounds && Object.keys(positions).length >= nodes.length * 0.8) {
       hasInitialFramed.current = true;
       const { centroid, radius } = graphBounds;
-      const optimalDistance = Math.min(55, Math.max(35, radius * 2));
+      const optimalDistance = Math.min(45, Math.max(25, radius * 1.5));
       
       targetPositionRef.current.copy(centroid);
       targetCameraRef.current.set(centroid.x, centroid.y + 5, centroid.z + optimalDistance);
@@ -535,7 +535,7 @@ function Scene({
     
     // Move camera to face the selected node
     const currentDir = camera.position.clone().sub(controlsRef.current?.target || new THREE.Vector3()).normalize();
-    const distance = Math.min(45, Math.max(20, cameraDistance * 0.5));
+    const distance = Math.min(35, Math.max(15, cameraDistance * 0.4));
     targetCameraRef.current.copy(centroid).add(currentDir.multiplyScalar(distance));
     
     isTransitioning.current = true;
@@ -705,7 +705,7 @@ export default function Graph3DCanvas({
   focusedEdges = [],
   onResetView,
 }: Graph3DCanvasProps) {
-  const displayNodes = viewMode === 'focused' && focusedNodes.length > 0 ? focusedNodes : nodes;
+  const displayNodes = nodes;
   const displayEdges = viewMode === 'focused' && focusedEdges.length > 0 ? focusedEdges : edges;
   
   const focusedNodeIds = useMemo(() => {
