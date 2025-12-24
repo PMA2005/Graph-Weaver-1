@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import Graph3DCanvas from '@/components/Graph3DCanvas';
+import type { ViewMode } from '@/components/Graph3DCanvas';
 import NodeDetailsSidebar from '@/components/NodeDetailsSidebar';
 import GraphLegend from '@/components/GraphLegend';
 import TopNavigation from '@/components/TopNavigation';
@@ -11,15 +12,14 @@ import AddNodeModal from '@/components/AddNodeModal';
 import EditNodeModal from '@/components/EditNodeModal';
 import AddEdgeModal from '@/components/AddEdgeModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
-import FocusedGraphPanel from '@/components/FocusedGraphPanel';
+import FocusOverlay from '@/components/FocusOverlay';
 import { useToast } from '@/hooks/use-toast';
 import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
 export default function Home() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
-  const [focusedViewMode, setFocusedViewMode] = useState<'single' | 'combined'>('single');
-  const [activeViewIndex, setActiveViewIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [showHelp, setShowHelp] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showAddNode, setShowAddNode] = useState(false);
@@ -35,6 +35,9 @@ export default function Home() {
       if (newSet.has(nodeId)) {
         newSet.delete(nodeId);
         setSelectionOrder(order => order.filter(id => id !== nodeId));
+        if (newSet.size === 0) {
+          setViewMode('global');
+        }
       } else {
         if (!multiSelect) {
           newSet.clear();
@@ -43,24 +46,28 @@ export default function Home() {
           setSelectionOrder(order => [...order, nodeId]);
         }
         newSet.add(nodeId);
+        setViewMode('focused');
       }
       return newSet;
     });
-    setActiveViewIndex(0);
   }, []);
 
   const clearSelection = useCallback(() => {
     setSelectedNodeIds(new Set());
     setSelectionOrder([]);
-    setActiveViewIndex(0);
+    setViewMode('global');
   }, []);
 
-  const setPrimaryNode = useCallback((nodeId: string) => {
-    setSelectionOrder(order => {
-      const newOrder = order.filter(id => id !== nodeId);
-      return [nodeId, ...newOrder];
+  const removeNodeFromSelection = useCallback((nodeId: string) => {
+    setSelectedNodeIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(nodeId);
+      if (newSet.size === 0) {
+        setViewMode('global');
+      }
+      return newSet;
     });
-    setActiveViewIndex(0);
+    setSelectionOrder(order => order.filter(id => id !== nodeId));
   }, []);
 
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
@@ -185,38 +192,31 @@ export default function Home() {
   const focusedSubgraph = useMemo(() => {
     if (selectedNodes.length === 0) return { nodes: [], edges: [] };
     
-    if (focusedViewMode === 'single') {
-      const targetNodeId = selectionOrder[activeViewIndex] || selectionOrder[0];
-      if (!targetNodeId) return { nodes: [], edges: [] };
-      return getNeighborhood(targetNodeId);
-    } else {
-      const allNeighborIds = new Set<string>();
-      const allNeighborEdges: GraphEdge[] = [];
-      const edgeSet = new Set<string>();
-      
-      selectedNodes.forEach(node => {
-        const neighborhood = getNeighborhood(node.node_id);
-        neighborhood.nodes.forEach(n => allNeighborIds.add(n.node_id));
-        neighborhood.edges.forEach(e => {
-          const edgeKey = `${e.source_node}-${e.target_node}-${e.relationship_type}`;
-          if (!edgeSet.has(edgeKey)) {
-            edgeSet.add(edgeKey);
-            allNeighborEdges.push(e);
-          }
-        });
+    const allNeighborIds = new Set<string>();
+    const allNeighborEdges: GraphEdge[] = [];
+    const edgeSet = new Set<string>();
+    
+    selectedNodes.forEach(node => {
+      const neighborhood = getNeighborhood(node.node_id);
+      neighborhood.nodes.forEach(n => allNeighborIds.add(n.node_id));
+      neighborhood.edges.forEach(e => {
+        const edgeKey = `${e.source_node}-${e.target_node}-${e.relationship_type}`;
+        if (!edgeSet.has(edgeKey)) {
+          edgeSet.add(edgeKey);
+          allNeighborEdges.push(e);
+        }
       });
-      
-      return {
-        nodes: nodes.filter(n => allNeighborIds.has(n.node_id)),
-        edges: allNeighborEdges
-      };
-    }
-  }, [selectedNodes, focusedViewMode, activeViewIndex, selectionOrder, getNeighborhood, nodes]);
+    });
+    
+    return {
+      nodes: nodes.filter(n => allNeighborIds.has(n.node_id)),
+      edges: allNeighborEdges
+    };
+  }, [selectedNodes, getNeighborhood, nodes]);
 
   const handleResetView = () => {
     clearSelection();
     setTypeFilter(null);
-    toast({ title: 'View Reset', description: 'Graph view has been reset to default' });
   };
 
   const handleExport = () => {
@@ -313,7 +313,6 @@ export default function Home() {
   }
 
   const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget || showHelp;
-  const isSidebarOpen = selectedNodes.length > 0;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -335,29 +334,25 @@ export default function Home() {
               selectedNode={primaryNode}
               selectedNodeIds={selectedNodeIds}
               onNodeSelect={handleNodeSelect}
+              viewMode={viewMode}
+              focusedNodes={focusedSubgraph.nodes}
+              focusedEdges={focusedSubgraph.edges}
+              onResetView={handleResetView}
             />
           )}
         </div>
       </div>
 
-      {selectedNodes.length > 0 && (
-        <div className="absolute top-16 bottom-20 left-0">
-          <FocusedGraphPanel
-            subgraph={focusedSubgraph}
-            selectedNodes={selectedNodes}
-            selectedNodeIds={selectedNodeIds}
-            viewMode={focusedViewMode}
-            activeViewIndex={activeViewIndex}
-            onViewModeChange={setFocusedViewMode}
-            onActiveViewChange={setActiveViewIndex}
-            onNodeSelect={(node: GraphNode) => toggleNodeSelection(node, true)}
-            onNodeNavigate={(node: GraphNode) => {
-              clearSelection();
-              toggleNodeSelection(node, false);
-            }}
-          />
-        </div>
-      )}
+      <FocusOverlay
+        selectedNodes={selectedNodes}
+        viewMode={viewMode}
+        onRemoveNode={removeNodeFromSelection}
+        onResetView={handleResetView}
+        onNodeClick={(node) => {
+          clearSelection();
+          toggleNodeSelection(node, false);
+        }}
+      />
 
       {primaryNode && (
         <NodeDetailsSidebar
