@@ -113,18 +113,18 @@ function useForceSimulation(
       existingPositions.set(n.id, { x: n.x, y: n.y, z: n.z });
     });
 
-    const baseRadius = Math.max(20, 15 + Math.sqrt(nodes.length) * 5);
+    const baseRadius = Math.max(12, 8 + Math.sqrt(nodes.length) * 3);
     
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
       const angle = (i / nodes.length) * Math.PI * 2;
-      const radius = baseRadius + Math.random() * (baseRadius * 0.3);
+      const radius = baseRadius + Math.random() * (baseRadius * 0.2);
       const isProject = node.node_type.toLowerCase() === 'project';
-      const verticalOffset = isProject ? 15 : -15;
+      const verticalOffset = isProject ? 12 : -12;
       return {
         id: node.node_id,
         x: existing?.x ?? Math.cos(angle) * radius,
-        y: existing?.y ?? verticalOffset + (Math.random() - 0.5) * 8,
+        y: existing?.y ?? verticalOffset + (Math.random() - 0.5) * 5,
         z: existing?.z ?? Math.sin(angle) * radius,
         node,
       };
@@ -143,17 +143,17 @@ function useForceSimulation(
 
     nodesRef.current = simNodes;
 
-    const collisionRadius = Math.max(6, 5 + nodes.length * 0.1);
-    const chargeStrength = Math.min(-300, -150 - nodes.length * 5);
-    const linkDistance = Math.max(12, 8 + nodes.length * 0.4);
+    const collisionRadius = Math.max(4, 3 + nodes.length * 0.05);
+    const chargeStrength = -80 - nodes.length * 2;
+    const linkDistance = Math.max(8, 6 + nodes.length * 0.2);
 
     const yForce = () => {
       let nodes: SimNode[] = [];
       const force = (alpha: number) => {
         nodes.forEach(node => {
           const isProject = node.node.node_type.toLowerCase() === 'project';
-          const targetY = isProject ? 18 : -18;
-          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.15;
+          const targetY = isProject ? 12 : -12;
+          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.2;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
@@ -164,14 +164,14 @@ function useForceSimulation(
       .force('link', forceLink(simLinks)
         .id((d: any) => d.id)
         .distance(linkDistance)
-        .strength(0.3)
+        .strength(0.5)
       )
-      .force('charge', forceManyBody().strength(chargeStrength).distanceMax(baseRadius * 3))
-      .force('center', forceCenter(0, 0, 0).strength(0.03))
+      .force('charge', forceManyBody().strength(chargeStrength).distanceMax(baseRadius * 1.8))
+      .force('center', forceCenter(0, 0, 0).strength(0.08))
       .force('yAxis', yForce())
-      .force('collision', forceCollide().radius(collisionRadius).strength(0.8))
-      .alphaDecay(0.02)
-      .velocityDecay(0.3);
+      .force('collision', forceCollide().radius(collisionRadius).strength(0.9))
+      .alphaDecay(0.025)
+      .velocityDecay(0.35);
 
     simulationRef.current = simulation as any;
 
@@ -240,7 +240,7 @@ function AnimatedNode3D({
     ? <boxGeometry args={[nodeSize * 1.4, nodeSize * 1.4, nodeSize * 1.4]} />
     : <octahedronGeometry args={[nodeSize]} />;
 
-  const labelScale = Math.max(0.8, Math.min(1.5, 30 / cameraDistance));
+  const labelScale = Math.max(1.0, Math.min(2.0, 50 / cameraDistance));
   const showLabel = true;
 
   return (
@@ -279,9 +279,9 @@ function AnimatedNode3D({
       
       {showLabel && (
         <Html
-          position={[0, nodeSize + 0.8, 0]}
+          position={[0, nodeSize + 1.2, 0]}
           center
-          distanceFactor={15}
+          distanceFactor={8}
           style={{ 
             pointerEvents: 'none',
             transform: `scale(${labelScale})`,
@@ -289,21 +289,21 @@ function AnimatedNode3D({
           }}
         >
           <div 
-            className="text-center whitespace-nowrap select-none px-3 py-1.5 rounded-md"
+            className="text-center whitespace-nowrap select-none px-4 py-2 rounded-md"
             style={{ 
-              background: 'rgba(10, 14, 39, 0.9)',
+              background: 'rgba(10, 14, 39, 0.95)',
               border: `2px solid ${color}`,
-              boxShadow: `0 0 12px ${color}60, 0 0 24px ${color}30`,
+              boxShadow: `0 0 15px ${color}80, 0 0 30px ${color}40`,
             }}
           >
             <div 
-              className="font-display text-base font-bold leading-tight"
-              style={{ color: '#ffffff', textShadow: `0 0 8px ${color}` }}
+              className="font-display text-lg font-bold leading-tight"
+              style={{ color: '#ffffff', textShadow: `0 0 10px ${color}` }}
             >
               {node.display_name}
             </div>
             <div 
-              className="font-tech text-sm uppercase tracking-wider mt-0.5"
+              className="font-tech text-sm uppercase tracking-wider mt-1"
               style={{ color: color, fontWeight: 600 }}
             >
               {typeLabel}
@@ -329,22 +329,25 @@ function EdgeLabel({
   const formattedLabel = relationshipType.replace(/_/g, ' ');
   const edgeColor = getEdgeColor(relationshipType);
   
-  if (cameraDistance > 15 && !isHighlighted) return null;
+  if (cameraDistance > 80 && !isHighlighted) return null;
+  
+  const labelScale = Math.max(0.8, Math.min(1.5, 40 / cameraDistance));
   
   return (
     <Html
       position={position}
       center
-      distanceFactor={12}
-      style={{ pointerEvents: 'none' }}
+      distanceFactor={6}
+      style={{ pointerEvents: 'none', transform: `scale(${labelScale})` }}
     >
       <div 
-        className="font-tech text-xs px-2 py-0.5 rounded whitespace-nowrap select-none"
+        className="font-tech text-sm px-3 py-1 rounded-md whitespace-nowrap select-none font-semibold"
         style={{ 
-          background: isHighlighted ? `${edgeColor}33` : 'rgba(0, 0, 0, 0.6)',
-          color: edgeColor,
-          border: `1px solid ${edgeColor}${isHighlighted ? '80' : '40'}`,
-          textShadow: '0 0 5px rgba(0,0,0,0.8)',
+          background: isHighlighted ? `${edgeColor}50` : 'rgba(10, 14, 39, 0.9)',
+          color: isHighlighted ? '#ffffff' : edgeColor,
+          border: `2px solid ${edgeColor}`,
+          textShadow: `0 0 8px ${edgeColor}`,
+          boxShadow: isHighlighted ? `0 0 12px ${edgeColor}60` : 'none',
         }}
       >
         {formattedLabel}
@@ -408,7 +411,7 @@ function AnimatedEdge3D({
   return (
     <group ref={groupRef}>
       <primitive object={lineObject} />
-      {isHighlighted && !isFaded && (
+      {!isFaded && (
         <EdgeLabel 
           position={midPoint}
           relationshipType={relationshipType}
@@ -502,10 +505,10 @@ function Scene({
     if (!hasInitialFramed.current && graphBounds && Object.keys(positions).length >= nodes.length * 0.8) {
       hasInitialFramed.current = true;
       const { centroid, radius } = graphBounds;
-      const optimalDistance = Math.max(40, radius * 2.5);
+      const optimalDistance = Math.min(55, Math.max(35, radius * 2));
       
       targetPositionRef.current.copy(centroid);
-      targetCameraRef.current.set(centroid.x, centroid.y + radius * 0.5, centroid.z + optimalDistance);
+      targetCameraRef.current.set(centroid.x, centroid.y + 5, centroid.z + optimalDistance);
       isTransitioning.current = true;
     }
   }, [graphBounds, positions, nodes.length]);
@@ -532,7 +535,7 @@ function Scene({
     
     // Move camera to face the selected node
     const currentDir = camera.position.clone().sub(controlsRef.current?.target || new THREE.Vector3()).normalize();
-    const distance = Math.max(25, cameraDistance * 0.6);
+    const distance = Math.min(45, Math.max(20, cameraDistance * 0.5));
     targetCameraRef.current.copy(centroid).add(currentDir.multiplyScalar(distance));
     
     isTransitioning.current = true;

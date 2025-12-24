@@ -33,6 +33,8 @@ export default function Home() {
     const nodeId = node.node_id;
     setSelectedNodeIds(prev => {
       const newSet = new Set(prev);
+      const isAlreadyInFocusedView = prev.size > 0;
+      
       if (newSet.has(nodeId)) {
         newSet.delete(nodeId);
         setSelectionOrder(order => order.filter(id => id !== nodeId));
@@ -40,7 +42,7 @@ export default function Home() {
           setViewMode('global');
         }
       } else {
-        if (!multiSelect) {
+        if (!multiSelect && !isAlreadyInFocusedView) {
           newSet.clear();
           setSelectionOrder([nodeId]);
         } else {
