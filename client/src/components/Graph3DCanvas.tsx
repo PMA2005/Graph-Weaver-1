@@ -157,26 +157,27 @@ function Node3D({
       )}
       
       <Html
-        position={[0, 0.8, 0]}
+        position={[0, 0, 0]}
         center
-        distanceFactor={10}
+        distanceFactor={8}
         style={{ pointerEvents: 'none' }}
       >
         <div 
-          className="text-center whitespace-nowrap select-none"
+          className="text-center whitespace-nowrap select-none px-2 py-1 rounded"
           style={{ 
-            transform: 'translateX(-50%)',
-            textShadow: '0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6)'
+            background: 'rgba(0, 0, 0, 0.75)',
+            border: `1px solid ${color}40`,
+            boxShadow: `0 0 8px ${color}30`,
           }}
         >
           <div 
-            className="font-display text-sm font-bold"
-            style={{ color: color }}
+            className="font-display text-sm font-bold leading-tight"
+            style={{ color: '#ffffff' }}
           >
             {node.display_name}
           </div>
           <div 
-            className="font-tech text-xs opacity-70"
+            className="font-tech text-xs uppercase tracking-wider"
             style={{ color: color }}
           >
             {typeLabel}
