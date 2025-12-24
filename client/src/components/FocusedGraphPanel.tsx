@@ -256,7 +256,11 @@ export default function FocusedGraphPanel({
   return (
     <div 
       className="absolute left-0 top-0 bottom-0 w-[420px] flex flex-col border-r border-cyan-500/20 z-40"
-      style={{ background: 'rgba(10, 14, 39, 0.95)' }}
+      style={{ 
+        background: 'rgba(10, 14, 39, 0.75)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
       data-testid="panel-focused-graph"
     >
       <div className="p-3 border-b border-cyan-500/20 space-y-2">

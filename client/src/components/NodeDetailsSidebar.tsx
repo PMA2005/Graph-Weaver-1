@@ -114,6 +114,7 @@ export default function NodeDetailsSidebar({
         style={{
           background: 'rgba(10, 14, 39, 0.75)',
           backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           boxShadow: '0 0 30px rgba(0, 255, 255, 0.1)',
         }}
       >
