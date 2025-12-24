@@ -1,5 +1,5 @@
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars, Html, Text } from '@react-three/drei';
+import { OrbitControls, Stars, Text, Billboard, Html } from '@react-three/drei';
 import { Suspense, useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -156,34 +156,34 @@ function Node3D({
         </mesh>
       )}
       
-      <Html
-        position={[0, 0, 0]}
-        center
-        distanceFactor={8}
-        style={{ pointerEvents: 'none' }}
-      >
-        <div 
-          className="text-center whitespace-nowrap select-none px-2 py-1 rounded"
-          style={{ 
-            background: 'rgba(0, 0, 0, 0.75)',
-            border: `1px solid ${color}40`,
-            boxShadow: `0 0 8px ${color}30`,
-          }}
+      <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
+        <mesh position={[0, 0, -0.01]}>
+          <planeGeometry args={[Math.max(node.display_name.length * 0.12 + 0.4, 1.2), 0.5]} />
+          <meshBasicMaterial color="#000000" transparent opacity={0.75} />
+        </mesh>
+        <Text
+          position={[0, 0.08, 0]}
+          fontSize={0.15}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.01}
+          outlineColor="#000000"
         >
-          <div 
-            className="font-display text-sm font-bold leading-tight"
-            style={{ color: '#ffffff' }}
-          >
-            {node.display_name}
-          </div>
-          <div 
-            className="font-tech text-xs uppercase tracking-wider"
-            style={{ color: color }}
-          >
-            {typeLabel}
-          </div>
-        </div>
-      </Html>
+          {node.display_name}
+        </Text>
+        <Text
+          position={[0, -0.12, 0]}
+          fontSize={0.09}
+          color={color}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.008}
+          outlineColor="#000000"
+        >
+          {typeLabel.toUpperCase()}
+        </Text>
+      </Billboard>
     </group>
   );
 }
