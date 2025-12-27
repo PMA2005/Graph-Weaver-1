@@ -67,8 +67,12 @@ export default function AddEdgeModal({
   
   const isCustom = relationshipType === 'custom';
 
-  const people = nodes.filter(n => n.node_type.toLowerCase() === 'person');
-  const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
+  const people = nodes
+    .filter(n => n.node_type.toLowerCase() === 'person')
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  const projects = nodes
+    .filter(n => n.node_type.toLowerCase() === 'project')
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
 
   return (
     <div 
