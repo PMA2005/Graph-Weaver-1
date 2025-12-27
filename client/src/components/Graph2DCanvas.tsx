@@ -98,8 +98,8 @@ function useForceSimulation2D(
 
     const centerX = width / 2;
     const centerY = height / 2;
-    const spreadX = width * 0.35;
-    const spreadY = height * 0.25;
+    const spreadX = width * 0.4;
+    const spreadY = height * 0.35;
 
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
@@ -108,8 +108,8 @@ function useForceSimulation2D(
       const verticalOffset = isProject ? -spreadY : spreadY;
       return {
         id: node.node_id,
-        x: existing?.x ?? centerX + Math.cos(angle) * spreadX + (Math.random() - 0.5) * 50,
-        y: existing?.y ?? centerY + verticalOffset + (Math.random() - 0.5) * 30,
+        x: existing?.x ?? centerX + Math.cos(angle) * spreadX + (Math.random() - 0.5) * 80,
+        y: existing?.y ?? centerY + verticalOffset + (Math.random() - 0.5) * 40,
         node,
       };
     });
@@ -133,7 +133,7 @@ function useForceSimulation2D(
         nodes.forEach(node => {
           const isProject = node.node.node_type.toLowerCase() === 'project';
           const targetY = isProject ? centerY - spreadY : centerY + spreadY;
-          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.2;
+          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.6;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
@@ -143,15 +143,15 @@ function useForceSimulation2D(
     const simulation = d3Force.forceSimulation(simNodes)
       .force('link', d3Force.forceLink(simLinks)
         .id((d: any) => d.id)
-        .distance(120)
-        .strength(0.4)
+        .distance(180)
+        .strength(0.25)
       )
-      .force('charge', d3Force.forceManyBody().strength(-400).distanceMax(500))
-      .force('center', d3Force.forceCenter(centerX, centerY).strength(0.03))
-      .force('collision', d3Force.forceCollide().radius(60).strength(0.9))
+      .force('charge', d3Force.forceManyBody().strength(-800).distanceMax(600))
+      .force('center', d3Force.forceCenter(centerX, centerY).strength(0.02))
+      .force('collision', d3Force.forceCollide().radius(75).strength(0.95))
       .force('yAxis', createYForce())
-      .alphaDecay(0.02)
-      .velocityDecay(0.35);
+      .alphaDecay(0.015)
+      .velocityDecay(0.4);
 
     simulation.on('tick', () => {
       const newPositions: Record<string, [number, number]> = {};
@@ -356,15 +356,15 @@ export default function Graph2DCanvas({
                   strokeOpacity={isFaded ? 0.15 : isHighlighted ? 0.9 : 0.5}
                   filter={isHighlighted ? `url(#edge-glow-${edge.relationship_type})` : undefined}
                 />
-                {!isFaded && (
+                {isHighlighted && (
                   <g transform={`translate(${midX}, ${midY})`}>
                     <rect
                       x={-40}
-                      y={-12}
+                      y={-10}
                       width={80}
-                      height={24}
+                      height={20}
                       rx={4}
-                      fill="rgba(10, 14, 39, 0.9)"
+                      fill="rgba(10, 14, 39, 0.95)"
                       stroke={edgeColor}
                       strokeWidth={1}
                     />
@@ -372,7 +372,7 @@ export default function Graph2DCanvas({
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill={edgeColor}
-                      fontSize={11}
+                      fontSize={10}
                       fontFamily="monospace"
                       fontWeight={600}
                     >
