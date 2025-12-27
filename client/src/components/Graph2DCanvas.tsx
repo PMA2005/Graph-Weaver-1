@@ -602,25 +602,109 @@ export default function Graph2DCanvas({
           })}
         </g>
 
-        <rect
-          x={10}
-          y={dimensions.height - 40}
-          width={180}
-          height={30}
-          rx={4}
-          fill="rgba(10, 14, 39, 0.8)"
-          stroke="rgba(0, 255, 255, 0.3)"
-          strokeWidth={1}
-        />
-        <text
-          x={20}
-          y={dimensions.height - 20}
-          fill="rgba(0, 255, 255, 0.7)"
-          fontSize={11}
-          fontFamily="monospace"
-        >
-          Scroll: Zoom | Drag: Pan
-        </text>
+        {/* Zoom controls and info */}
+        <g>
+          {/* Info box */}
+          <rect
+            x={10}
+            y={dimensions.height - 40}
+            width={180}
+            height={30}
+            rx={4}
+            fill="rgba(10, 14, 39, 0.8)"
+            stroke="rgba(0, 255, 255, 0.3)"
+            strokeWidth={1}
+          />
+          <text
+            x={20}
+            y={dimensions.height - 20}
+            fill="rgba(0, 255, 255, 0.7)"
+            fontSize={11}
+            fontFamily="monospace"
+          >
+            Scroll: Zoom | Drag: Pan
+          </text>
+
+          {/* Zoom out button (-) */}
+          <g
+            onClick={() => setTransform(t => {
+              const zoomFactor = 0.8;
+              const newScale = Math.max(0.3, t.scale * zoomFactor);
+              const centerX = dimensions.width / 2;
+              const centerY = dimensions.height / 2;
+              return {
+                x: centerX - (centerX - t.x) * (newScale / t.scale),
+                y: centerY - (centerY - t.y) * (newScale / t.scale),
+                scale: newScale
+              };
+            })}
+            style={{ cursor: 'pointer' }}
+            data-testid="button-zoom-out"
+          >
+            <rect
+              x={200}
+              y={dimensions.height - 40}
+              width={30}
+              height={30}
+              rx={4}
+              fill="rgba(10, 14, 39, 0.8)"
+              stroke="rgba(0, 255, 255, 0.3)"
+              strokeWidth={1}
+            />
+            <text
+              x={215}
+              y={dimensions.height - 20}
+              fill="rgba(0, 255, 255, 0.9)"
+              fontSize={18}
+              fontFamily="monospace"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{ pointerEvents: 'none' }}
+            >
+              -
+            </text>
+          </g>
+
+          {/* Zoom in button (+) */}
+          <g
+            onClick={() => setTransform(t => {
+              const zoomFactor = 1.25;
+              const newScale = Math.min(4, t.scale * zoomFactor);
+              const centerX = dimensions.width / 2;
+              const centerY = dimensions.height / 2;
+              return {
+                x: centerX - (centerX - t.x) * (newScale / t.scale),
+                y: centerY - (centerY - t.y) * (newScale / t.scale),
+                scale: newScale
+              };
+            })}
+            style={{ cursor: 'pointer' }}
+            data-testid="button-zoom-in"
+          >
+            <rect
+              x={235}
+              y={dimensions.height - 40}
+              width={30}
+              height={30}
+              rx={4}
+              fill="rgba(10, 14, 39, 0.8)"
+              stroke="rgba(0, 255, 255, 0.3)"
+              strokeWidth={1}
+            />
+            <text
+              x={250}
+              y={dimensions.height - 20}
+              fill="rgba(0, 255, 255, 0.9)"
+              fontSize={18}
+              fontFamily="monospace"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{ pointerEvents: 'none' }}
+            >
+              +
+            </text>
+          </g>
+        </g>
       </svg>
     </div>
   );
