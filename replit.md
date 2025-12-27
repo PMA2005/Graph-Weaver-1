@@ -1,57 +1,57 @@
-# 3D Graph Visualization
+# 2D Graph Visualization
 
-Interactive 3D network graph visualization showing people and projects from an SQLite database with a sci-fi aesthetic.
+Interactive 2D network graph visualization showing people and projects from an SQLite database with a sci-fi aesthetic.
 
 ## Overview
-This app reads from a SQLite database (graph2.db) containing nodes (people, projects) and edges (relationships) and displays them as an interactive 3D graph. Users can click nodes to view details, filter by type, and navigate connections.
+This app reads from a SQLite database (graph2_1765932308440.db) containing nodes (people, projects) and edges (relationships) and displays them as an interactive 2D force-directed graph. Users can click nodes to view details, multi-select for focused views, and manage connections with full CRUD operations.
 
 ## Tech Stack
-- **Frontend**: React, React Three Fiber, Drei, Three.js, TailwindCSS
+- **Frontend**: React, D3-Force, D3-Force-3D, Framer Motion, TailwindCSS
 - **Backend**: Express.js, better-sqlite3
-- **Database**: SQLite (graph2.db)
+- **Database**: SQLite (graph2_1765932308440.db)
 - **Desktop**: Electron (for standalone desktop app packaging)
 
 ## Project Structure
 ```
 ├── attached_assets/
-│   └── graph2_*.db         # SQLite database with nodes and edges tables
+│   └── graph2_*.db              # SQLite database with nodes and edges tables
 ├── client/src/
 │   ├── components/
-│   │   ├── Graph3DCanvas.tsx      # 3D visualization with Three.js, camera persistence
-│   │   ├── NodeDetailsSidebar.tsx # Node details panel (right side)
-│   │   ├── FocusedGraphPanel.tsx  # Multi-select neighborhood panel (left side)
-│   │   ├── GraphLegend.tsx        # Color legend and filters
-│   │   ├── TopNavigation.tsx      # Header with controls
-│   │   ├── ThemeProvider.tsx      # Dark mode toggle with localStorage persistence
-│   │   ├── HelpOverlay.tsx        # Help modal for new users (opaque background)
-│   │   ├── LoadingScreen.tsx      # Loading animation
-│   │   ├── AddNodeModal.tsx       # Modal for creating new nodes
-│   │   ├── AddEdgeModal.tsx       # Modal for creating new edges
-│   │   ├── EditNodeModal.tsx      # Modal for editing existing nodes
-│   │   └── DeleteConfirmModal.tsx # Confirmation dialog for deletions
+│   │   ├── Graph2DCanvas.tsx        # 2D SVG visualization with D3 force, pan/zoom, inverse scaling
+│   │   ├── NodeDetailsSidebar.tsx   # Node details panel with directional connections (right side)
+│   │   ├── FocusOverlay.tsx         # Multi-select chip display with reorder support (bottom)
+│   │   ├── GraphLegend.tsx          # Color legend for node types and edge relationships
+│   │   ├── TopNavigation.tsx        # Header with add node button and theme toggle
+│   │   ├── ThemeProvider.tsx        # Dark mode toggle with localStorage persistence
+│   │   ├── HelpOverlay.tsx          # Help modal for new users (opaque background)
+│   │   ├── LoadingScreen.tsx        # Loading animation
+│   │   ├── AddNodeModal.tsx         # Modal for creating new nodes
+│   │   ├── AddEdgeModal.tsx         # Modal for creating new edges (alphabetically sorted dropdowns)
+│   │   ├── EditNodeModal.tsx        # Modal for editing existing nodes
+│   │   └── DeleteConfirmModal.tsx   # Confirmation dialog for deletions
 │   └── pages/
-│       └── home.tsx               # Main page combining all components
-├── electron/                      # Electron desktop app wrapper
+│       └── home.tsx                 # Main page combining all components
+├── electron/                        # Electron desktop app wrapper
 │   ├── src/
-│   │   ├── main.ts               # Electron main process entry point
-│   │   ├── preload.ts            # Secure preload script for context bridge
-│   │   └── serverRunner.ts       # Starts Express server in production mode
-│   ├── package.json              # Electron-specific dependencies
-│   └── tsconfig.json             # TypeScript config for Electron
-├── script/                        # Build and packaging scripts
-│   ├── build.ts                  # Production build script (Vite + esbuild)
-│   └── pack-guard.js             # Platform validation for native modules
-├── scripts/                       # Utility scripts
-│   └── migrate-data.ts           # SQLite to PostgreSQL migration script
+│   │   ├── main.ts                 # Electron main process entry point
+│   │   ├── preload.ts              # Secure preload script for context bridge
+│   │   └── serverRunner.ts         # Starts Express server in production mode
+│   ├── package.json                # Electron-specific dependencies
+│   └── tsconfig.json               # TypeScript config for Electron
+├── script/                          # Build and packaging scripts
+│   ├── build.ts                    # Production build script (Vite + esbuild)
+│   └── pack-guard.js               # Platform validation for native modules
+├── scripts/                         # Utility scripts
+│   └── migrate-data.ts             # SQLite to PostgreSQL migration script
 ├── server/
-│   ├── index.ts           # Express server entry point
-│   ├── routes.ts          # API endpoints for CRUD operations
-│   ├── storage.ts         # SQLite database interface
-│   ├── db.ts              # Database connection setup
-│   ├── static.ts          # Static file serving for production
-│   └── vite.ts            # Vite dev server integration
+│   ├── index.ts             # Express server entry point
+│   ├── routes.ts            # API endpoints for CRUD operations
+│   ├── storage.ts           # SQLite database interface
+│   ├── db.ts                # Database connection setup
+│   ├── static.ts            # Static file serving for production
+│   └── vite.ts              # Vite dev server integration
 └── shared/
-    └── schema.ts           # TypeScript types and Zod schemas
+    └── schema.ts             # TypeScript types and Zod schemas
 ```
 
 ## Database Schema
@@ -64,28 +64,39 @@ This app reads from a SQLite database (graph2.db) containing nodes (people, proj
 - GET /api/nodes/:nodeId - Get single node
 - POST /api/nodes - Create node
 - PATCH /api/nodes/:nodeId - Update node
-- DELETE /api/nodes/:nodeId - Delete node
+- DELETE /api/nodes/:nodeId - Delete node (cascades to edges)
 - GET /api/edges - Get all edges
 - POST /api/edges - Create edge
 - DELETE /api/edges - Delete edge
 - GET /api/health - Health check endpoint
 
 ## Visual Design
-- Sci-fi theme with neon colors (cyan for people, purple for projects)
-- Dark space background with star field
-- Glowing 3D nodes: spheres for people, cubes for projects
-- Interactive: rotate, zoom, pan the 3D view
-- Click nodes to see details in sidebar
-- Dark mode toggle with system preference detection
+- Sci-fi theme with neon colors (cyan circles for people, purple rectangles for projects)
+- Dark space background with grid pattern
+- Color-coded edges by relationship type (green, blue, yellow, orange, pink)
+- Vertical stratification: projects at top, people at bottom
+- Inverse scaling: labels and edges maintain constant screen size across zoom (0.3x-4x)
+- Floating "solar system" animation for organic feel
+- Pulsing selection indicators
 
 ## Key Features
+- **2D Force-Directed Graph**: SVG-based with D3 force simulation
+- **Pan & Zoom**: Scroll to zoom, drag to pan, +/- buttons for precision
+- **Inverse Scaling**: Text and edges stay readable at all zoom levels
 - **Multi-Select**: Ctrl/Cmd+click to select multiple nodes
-- **Focused Graph Panel**: Shows neighborhood subgraph of selected nodes (left side)
-- **Node Details Sidebar**: Edit, delete, and manage connections (right side)
-- **Camera Persistence**: Camera position saved and restored when clicking nodes
-- **X Button Removal**: Remove individual nodes from selection without deselecting all
-- **Help Overlay**: First-time user instructions with opaque background
-- **Auto-rotation**: 3D view slowly rotates, pauses on interaction
+- **Focus Mode**: View only selected nodes and their connections
+- **Selection Reordering**: Click chips to switch sidebar without removing from focus
+- **Directional Connections**: Sidebar shows incoming vs outgoing relationships
+- **Alphabetical Dropdowns**: People/projects sorted for easy finding
+- **Dark Mode Toggle**: System preference detection with manual override
+- **Help Overlay**: First-time user instructions
+
+## Recent Changes
+- Implemented inverse scaling for labels (fontSize / clamp(scale, 0.3, 4)) and edges (strokeWidth / clamp(scale, 0.3, 4))
+- Fixed zoom buttons to work in both full view and focused view modes (wasFocusModeRef pattern)
+- Added alphabetical sorting to AddEdgeModal dropdowns using localeCompare
+- Updated FocusOverlay chip clicks to reorder selection (makePrimaryNode) instead of clearing focus
+- Separated incoming/outgoing connections in NodeDetailsSidebar
 
 ## Electron Desktop App
 The app can be packaged as a standalone desktop application using Electron.

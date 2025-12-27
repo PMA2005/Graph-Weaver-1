@@ -1,38 +1,45 @@
-# Network Graph - 3D Interactive Visualization
+# Network Graph - 2D Interactive Visualization
 
-A 3D interactive graph visualization web application featuring a sci-fi aesthetic with neon colors and dark space backgrounds. View and manage relationships between people and projects with full CRUD operations.
+A 2D interactive graph visualization web application featuring a sci-fi aesthetic with neon colors and dark space backgrounds. View and manage relationships between people and projects with full CRUD operations.
 
 Available as both a web application and portable desktop apps for Windows and macOS.
 
 ## Features
 
 ### Core Visualization
-- **3D Graph Visualization** - Interactive graph using React Three Fiber with smooth animations
-- **Sci-Fi Aesthetic** - Cyan nodes for people, purple for projects, neon color-coded relationships
-- **Node Labels** - Display names shown above each node in the visualization
-- **Edge Labels** - Relationship types displayed on connection lines
-- **Filtered Views** - View individual person activities or project team compositions
+- **2D Force-Directed Graph** - Interactive SVG-based graph using D3 force simulation with smooth animations
+- **Sci-Fi Aesthetic** - Cyan circles for people, purple rectangles for projects, neon color-coded relationships
+- **Vertical Stratification** - Projects positioned at top of graph, people at bottom for clear visual hierarchy
+- **Inverse Scaling Labels** - Node labels and edge widths maintain constant screen size across all zoom levels (0.3x to 4x)
+- **Floating Animation** - Smooth "solar system" style floating motion for organic, living graph feel
+- **Pulsing Selection** - Selected nodes display animated pulsing ring indicators
 
-### Multi-Select & Focused Graph Panel
+### Pan, Zoom & Navigation
+- **Scroll to Zoom** - Mouse wheel zooms in/out centered on cursor position
+- **Drag to Pan** - Click and drag background to pan the view
+- **Zoom Buttons** - +/- controls for precise zoom adjustments
+- **Zoom Range** - Full zoom range from 0.3x (overview) to 4x (detail)
+- **Camera Persistence** - View position maintained when interacting with nodes
+
+### Multi-Select & Focused View
 - **Multi-Select Support** - Hold Ctrl (Windows/Linux) or Cmd (macOS) and click to select multiple nodes
-- **Remove from Selection** - Click the X button on any selected node tab to remove it from your selection
-- **Focused Graph Panel** - Left panel shows neighborhood subgraph of selected node(s)
-- **Single/All View Modes** - Toggle between viewing one node's neighborhood or combined neighborhoods of all selected nodes
-- **Node Navigation** - Click nodes in the focused panel to navigate to their neighborhood
-- **Interactive 3D Mini-Graph** - Auto-rotating 3D view with orbit controls in the focused panel
+- **Focused View Mode** - Click "View Focused" to see only selected nodes and their connections
+- **Selection Reordering** - Click focused node chips to switch sidebar display without removing nodes from focus
+- **Remove from Selection** - Click X button on any selected node chip to remove it from selection
+- **Filtered Edges** - Focused view shows only edges between focused nodes
 
 ### Data Management
 - **Full CRUD Operations** - Add, edit, and delete nodes and relationships
 - **Cascade Delete** - Deleting a node automatically removes all its relationships
 - **Custom Relationships** - Create your own relationship types
+- **Alphabetical Sorting** - People and projects sorted alphabetically in dropdown menus
 - **SQLite Database** - Persistent data storage with included sample data
 
 ### User Interface
 - **Dark Mode Toggle** - Switch between light and dark themes with automatic system preference detection
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
-- **Responsive Layout** - Main graph centers automatically when side panels open/close
-- **Camera Persistence** - Camera position stays in place when clicking nodes (no jumping)
-- **Details Sidebar** - View and edit node details, see all connections
+- **Comprehensive Legend** - Color-coded relationship types with edge color samples
+- **Details Sidebar** - View and edit node details with directional relationship information (incoming/outgoing)
 - **Connection Management** - Add and remove relationships from the sidebar
 - **Help Overlay** - First-time instructions that fully hide the graph for readability
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
@@ -41,16 +48,17 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ### Basic Interaction
 - **Click a node** - Select it and open the details sidebar
-- **Drag** - Rotate the 3D view
-- **Scroll** - Zoom in/out
-- **Double-click background** - Deselect all nodes
+- **Scroll** - Zoom in/out (centered on cursor position)
+- **Drag background** - Pan the view
+- **+/- buttons** - Precise zoom control
+- **Click background** - Deselect all nodes
 
 ### Multi-Select
-- **Ctrl+Click (Windows/Linux)** or **Cmd+Click (macOS)** - Add/remove nodes from selection
-- Selected nodes show in the Focused Graph Panel on the left
-- **Click X button** - Remove a node from your selection without deselecting everything
-- Use "Single" mode to view one node's neighborhood at a time
-- Use "All" mode to see combined neighborhoods of all selected nodes
+- **Ctrl+Click (Windows/Linux)** or **Cmd+Click (macOS)** - Add nodes to selection
+- Selected nodes show in the Focus Overlay at bottom of screen
+- **Click "View Focused"** - Enter focused view showing only selected nodes
+- **Click node chip** - Switch sidebar to show that node's details (keeps all nodes focused)
+- **Click X button** - Remove a node from focus
 
 ### Theme Toggle
 - **Click the theme toggle** in the top navigation bar to switch between light and dark mode
@@ -197,7 +205,7 @@ SQLite is not pre-installed on Windows. You can either:
 
 ## Tech Stack
 
-- **Frontend**: React, React Three Fiber, Tailwind CSS
+- **Frontend**: React, D3-Force, Tailwind CSS, Framer Motion
 - **Backend**: Express.js
 - **Database**: SQLite (better-sqlite3)
 - **Build Tool**: Vite

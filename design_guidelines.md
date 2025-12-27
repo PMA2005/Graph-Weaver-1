@@ -1,4 +1,4 @@
-# Design Guidelines: 3D Sci-Fi Graph Visualization
+# Design Guidelines: 2D Sci-Fi Graph Visualization
 
 ## Design Approach
 **Reference-Based Approach**: Sci-fi movie aesthetic inspired by films like Tron, Blade Runner 2049, and The Matrix - featuring neon glows, dark space backgrounds, holographic effects, and futuristic typography.
@@ -7,91 +7,129 @@
 1. **Cinematic Immersion**: Dark, space-like environment with glowing elements
 2. **Clarity Through Contrast**: Bright neon elements against deep backgrounds for readability
 3. **Accessible Complexity**: Sophisticated visuals with intuitive interactions for non-technical users
+4. **Consistent Scaling**: Labels and edges maintain constant on-screen size across all zoom levels
 
 ## Color Palette
-- **Background**: Deep space black (#0a0e27) with subtle star field or grid pattern
-- **Primary Nodes**: Electric cyan (#00ffff), neon purple (#b026ff), bright magenta (#ff006e)
-- **Secondary Nodes**: Teal (#00d9ff), lime green (#39ff14), orange (#ff6b35)
-- **Edges/Connections**: Semi-transparent cyan (#00ffff40) with glow effects
+- **Background**: Deep space black (#0a0e27) with subtle grid pattern
+- **Person Nodes**: Electric cyan (#00ffff) - circles
+- **Project Nodes**: Neon purple (#b026ff) - rectangles with rounded corners
+- **Edges/Connections**: Color-coded by relationship type with glow effects
 - **UI Elements**: Transparent panels with cyan/purple borders and backdrop blur
 - **Text**: White (#ffffff) and light cyan (#a0f0ff) for hierarchy
 - **Accents**: Glowing highlights using box-shadow with cyan/purple
 
+## Edge Color Coding
+- **assigned_to**: Green (#22c55e)
+- **collaborates_with**: Blue (#3b82f6)
+- **consults_on**: Yellow (#eab308)
+- **manages**: Orange (#f97316)
+- **reports_to**: Pink (#ec4899)
+- **default**: Gray (#6b7280)
+
 ## Typography
-- **Primary Font**: "Orbitron" or "Rajdhana" (Google Fonts) for headers - futuristic, geometric
-- **Secondary Font**: "Space Mono" or "Share Tech Mono" for data/labels - monospaced, technical
+- **Primary Font**: System sans-serif for headers - clean, modern
+- **Secondary Font**: Monospace for data/labels - technical feel
 - **Body Font**: "Inter" for descriptions - clean, readable
-- **Sizes**: Large titles (32-40px), section headers (20-24px), body (14-16px), labels (12-14px)
+- **Sizes**: Large titles (32-40px), section headers (20-24px), body (14-16px), labels (9-10px base with inverse scaling)
 
 ## Layout System
 **Spacing Units**: Tailwind 2, 4, 6, 8 for consistent rhythm
 
-### Main Canvas (3D Viewport)
-- Full-screen 3D canvas occupying majority of viewport
-- Fixed top navigation bar (h-16) with dark background and glowing border-bottom
-- Floating sidebar panel (right side, w-96) with glassmorphic effect
-- Bottom legend bar (h-20) explaining node types
+### Main Canvas (2D SVG Viewport)
+- Full-screen SVG canvas occupying majority of viewport
+- Fixed top navigation bar with dark background and glowing border-bottom
+- Floating sidebar panel (right side) with glassmorphic effect
+- Bottom legend bar explaining node types and edge colors
+- Focus overlay at bottom showing selected nodes when in multi-select mode
+
+### Graph Layout
+- **Vertical Stratification**: Projects positioned at top (y ~ 150), people at bottom (y ~ height - 150)
+- **Force-Directed**: D3 force simulation with collision detection and centering
+- **Floating Animation**: Subtle "solar system" orbital motion for organic feel
+- **Pan & Zoom**: Scroll wheel zoom (0.3x - 4x range), drag to pan, +/- button controls
 
 ### Component Structure
 
 **Navigation Bar** (Top, fixed):
 - Logo/title on left with glow effect
-- Center: View controls (rotate, zoom reset, layout toggle)
-- Right: Export button, settings icon
+- Center: Add Node button
+- Right: Theme toggle (dark/light mode)
 - Background: rgba(10, 14, 39, 0.9) with border-b-2 border-cyan-500 glow
 
-**3D Canvas** (Main viewport):
+**2D Canvas** (Main viewport):
 - Dark gradient background (#0a0e27 to #1a1e3f)
-- Particle system or subtle grid for depth
-- Nodes render as glowing 3D spheres/octahedrons with pulsing animation
-- Edge lines with gradient transparency and subtle glow
-- Camera controls: orbit, pan, zoom via mouse/touch
+- Nodes render as glowing shapes with pulsing animation on selection
+- Edge lines with color coding and inverse-scaled stroke width
+- SVG transform for pan/zoom operations
 
 **Sidebar Panel** (Right, floating):
 - Width: w-96, positioned absolute right-4 top-20
 - Glassmorphic background: backdrop-blur-xl with rgba(20, 24, 59, 0.8)
 - Border: 1px solid rgba(0, 255, 255, 0.3) with outer glow
 - Padding: p-6
-- Sections with glowing dividers between them
+- Sections: Node details, incoming connections, outgoing connections, actions
 
 **Legend Bar** (Bottom, fixed):
 - Height: h-20, bottom-0 position
-- Horizontal layout with node type indicators
-- Each indicator: colored circle + label in grid format
+- Horizontal layout with node type indicators and edge color samples
+- Each indicator: colored shape + label
 - Background: matching navigation bar style
+
+**Focus Overlay** (Bottom, conditional):
+- Appears when nodes are selected
+- Shows selected node chips with X buttons for removal
+- "View Focused" button to enter focused subgraph view
+- Click chips to reorder selection and update sidebar
 
 ## Component Library
 
-### Node Representation (3D)
-- **Shape Variations**: Spheres (people), cubes (projects), diamonds (milestones)
-- **Size**: Scale based on importance/connections (1x to 2.5x base size)
-- **Glow Effect**: Outer halo matching node color
-- **Hover State**: Increase glow intensity, slight scale up (1.1x)
-- **Selected State**: Bright pulsing glow, connecting edges highlight
+### Node Representation (2D SVG)
+- **Person**: Cyan circles with semi-transparent fill and solid stroke
+- **Project**: Purple rectangles with rounded corners (rx=6)
+- **Size**: Base size 20-24px, scales with selection state (1.15x focused, 1.3x selected)
+- **Glow Effect**: SVG filter with gaussian blur for neon glow
+- **Hover State**: Cursor pointer, no size change to prevent layout shift
+- **Selected State**: Bright pulsing ring animation, outer halo
 
 ### Edge Connections
-- **Line Style**: Curved tubes with gradient transparency
-- **Width**: Based on weight (1-4px equivalent in 3D)
-- **Label**: Relationship type in small monospace font, billboard effect
-- **Animation**: Subtle particle flow along edges (optional based on performance)
+- **Line Style**: Straight lines between node centers
+- **Width**: 2.5px base (4px highlighted), inverse-scaled with zoom for constant screen size
+- **Color**: Based on relationship_type with fallback to gray
+- **Opacity**: 0.75 normal, 0.2 faded (non-connected in focus mode), 1.0 highlighted
+- **Glow**: SVG filter matching edge color
+
+### Label Rendering
+- **Font**: White with text shadow for readability
+- **Size**: 9-10px base, inverse-scaled with zoom: fontSize / clamp(scale, 0.3, 4)
+- **Position**: Centered on node
+- **Truncation**: Names > 8 characters truncated with ".."
+
+### Zoom Controls
+- **Info Box**: Bottom-left showing "Scroll: Zoom | Drag: Pan"
+- **Buttons**: +/- buttons bottom-right for precise zoom control
+- **Reset**: Zoom buttons work in both full view and focused view modes
 
 ### Sidebar Content Structure
 1. **Header Section** (p-4, border-b):
    - Node type badge with matching color
-   - Display name in large Orbitron font
+   - Display name in large font
    - Close button (X) top-right
 
 2. **Details Section** (p-4):
-   - Description with Space Mono font
-   - Metadata grid: 2-column layout for properties
-   - Each property: label (cyan) + value (white)
+   - Description text
+   - Metadata: node type, ID
 
-3. **Connections Section** (p-4, border-t):
-   - List of connected nodes
-   - Each connection: icon + name + relationship type
+3. **Incoming Connections Section** (p-4, border-t):
+   - List of nodes that connect TO this node
+   - Each connection: icon + name + relationship type + delete button
    - Clickable to navigate to that node
 
-4. **Actions Section** (p-4, border-t):
+4. **Outgoing Connections Section** (p-4, border-t):
+   - List of nodes this node connects TO
+   - Each connection: icon + name + relationship type + delete button
+   - Clickable to navigate to that node
+
+5. **Actions Section** (p-4, border-t):
    - Edit button (primary: cyan glow)
    - Delete button (danger: red glow)
    - Add connection button (secondary)
@@ -112,43 +150,53 @@
 ## Interactive Elements
 
 ### Node Click Interaction
-1. Click node → camera smoothly focuses on node
-2. Sidebar slides in from right with node details
-3. Connected edges highlight with brighter glow
-4. Other nodes slightly dim (opacity: 0.4)
+1. Click node - select it and open sidebar
+2. Ctrl/Cmd+Click - add to multi-selection
+3. Click in focused overlay chips - switch primary node (sidebar updates)
+4. Connected edges highlight with brighter glow
+5. Other nodes slightly dim in focused mode (opacity: 0.25)
 
-### Camera Controls
-- Orbital rotation: drag to rotate around graph center
-- Zoom: scroll wheel or pinch gesture
-- Pan: right-click drag or two-finger drag
-- Reset button returns to default view
+### Zoom & Pan Controls
+- Scroll wheel: zoom centered on cursor
+- Drag background: pan view
+- +/- buttons: precise zoom steps (0.8x / 1.2x)
+- Zoom range: 0.3x minimum, 4x maximum
+- Transform persists across view mode changes
 
 ### Legend Interactivity
-- Click node type in legend → filter view to show only that type
-- Hover legend item → highlight matching nodes in 3D view
+- Displays all relationship types with color samples
+- Shows node type indicators (cyan circle = person, purple rectangle = project)
+
+### Focus Mode
+- Enter by selecting nodes and clicking "View Focused"
+- Shows only focused nodes and edges between them
+- Exit by clicking "Exit Focus" or clicking background
 
 ## Animations
 **Minimal but Impactful**:
-- Node glow pulse: 2s ease-in-out infinite
+- Node pulse ring: CSS animation for selected nodes
+- Floating motion: Subtle orbital animation using sine waves
 - Sidebar enter: slide-in-right 0.3s ease-out
 - Button hover: glow intensity increase 0.2s
-- Camera transitions: smooth easing over 0.8s
+- Transitions: opacity and transform with 0.3-0.4s ease-out
 - No distracting scroll or parallax effects
 
 ## Accessibility
 - High contrast ratios (neon on dark)
 - Keyboard navigation for all controls
-- ARIA labels for 3D elements
-- Alternative 2D view toggle for accessibility
 - Clear focus indicators with cyan outline
+- Inverse scaling keeps text readable at all zoom levels
+- Simple language in all UI text
+- Confirmation dialogs before destructive actions
 
 ## Non-Technical User Considerations
 - Prominent legend explaining colors/shapes
 - Tooltips on hover explaining controls
 - "Help" overlay with visual guide on first load
 - Simple language in all UI text
-- Undo/redo for all edit actions
+- Alphabetically sorted dropdowns for easy finding
+- Directional relationship display (incoming vs outgoing)
 - Confirmation dialogs before destructive actions
 
 ## Images
-No images required - 3D rendered graphics serve as the primary visual content. The sci-fi aesthetic is achieved entirely through WebGL/Three.js rendering, particle effects, and CSS treatments.
+No images required - SVG rendered graphics serve as the primary visual content. The sci-fi aesthetic is achieved entirely through SVG filters, glow effects, and CSS treatments.
