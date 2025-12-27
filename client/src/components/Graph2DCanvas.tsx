@@ -47,7 +47,7 @@ const RELATIONSHIP_COLORS: Record<string, string> = {
   consults_on: '#eab308',
   manages: '#f97316',
   reports_to: '#ec4899',
-  works_on: '#a855f7',
+  custom: '#00ffff',
   default: '#00ffff',
 };
 
