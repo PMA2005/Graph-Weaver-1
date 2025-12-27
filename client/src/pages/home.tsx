@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import Graph3DCanvas from '@/components/Graph3DCanvas';
-import type { ViewMode } from '@/components/Graph3DCanvas';
+import Graph2DCanvas from '@/components/Graph2DCanvas';
+import type { ViewMode } from '@/components/Graph2DCanvas';
 import NodeDetailsSidebar from '@/components/NodeDetailsSidebar';
 import GraphLegend from '@/components/GraphLegend';
 import TopNavigation from '@/components/TopNavigation';
@@ -332,7 +332,7 @@ export default function Home() {
       <div className="absolute inset-0 pt-16 pb-20">
         <div className="w-full h-full relative flex items-center justify-center">
           {!isAnyModalOpen && (
-            <Graph3DCanvas
+            <Graph2DCanvas
               key={graphKey}
               nodes={filteredNodes}
               edges={filteredEdges}
