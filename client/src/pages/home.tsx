@@ -21,7 +21,6 @@ export default function Home() {
   const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [showHelp, setShowHelp] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showAddNode, setShowAddNode] = useState(false);
   const [showEditNode, setShowEditNode] = useState(false);
   const [showAddEdge, setShowAddEdge] = useState(false);
@@ -83,6 +82,20 @@ export default function Home() {
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
     queryKey: ['/api/graph'],
   });
+
+  const selectAllOfType = useCallback((nodeType: string | null) => {
+    if (!nodeType || !graphData?.nodes) {
+      clearSelection();
+      return;
+    }
+    const nodesOfType = graphData.nodes.filter(n => n.node_type.toLowerCase() === nodeType);
+    if (nodesOfType.length === 0) return;
+    
+    const nodeIds = nodesOfType.map(n => n.node_id);
+    setSelectedNodeIds(new Set(nodeIds));
+    setSelectionOrder(nodeIds);
+    setViewMode('focused');
+  }, [graphData?.nodes, clearSelection]);
 
   useEffect(() => {
     const hasVisited = localStorage.getItem('graphVisitorHelp');
@@ -167,18 +180,6 @@ export default function Home() {
   const nodes: GraphNode[] = graphData?.nodes || [];
   const edges: GraphEdge[] = graphData?.edges || [];
 
-  const filteredNodes = typeFilter
-    ? nodes.filter(n => n.node_type.toLowerCase() === typeFilter)
-    : nodes;
-
-  const filteredNodeIds = new Set(filteredNodes.map(n => n.node_id));
-
-  const filteredEdges = typeFilter
-    ? edges.filter(e => 
-        filteredNodeIds.has(e.source_node) && 
-        filteredNodeIds.has(e.target_node)
-      )
-    : edges;
 
   const selectedNodes = useMemo(() => 
     selectionOrder.map(id => nodes.find(n => n.node_id === id)).filter(Boolean) as GraphNode[],
@@ -227,7 +228,6 @@ export default function Home() {
 
   const handleResetView = () => {
     clearSelection();
-    setTypeFilter(null);
     setGraphKey(k => k + 1);
   };
 
@@ -342,8 +342,8 @@ export default function Home() {
           {!isAnyModalOpen && (
             <Graph2DCanvas
               key={graphKey}
-              nodes={filteredNodes}
-              edges={filteredEdges}
+              nodes={nodes}
+              edges={edges}
               selectedNode={primaryNode}
               selectedNodeIds={selectedNodeIds}
               onNodeSelect={handleNodeSelect}
@@ -381,8 +381,13 @@ export default function Home() {
       )}
 
       <GraphLegend
-        onFilterType={setTypeFilter}
-        activeFilter={typeFilter}
+        onFilterType={selectAllOfType}
+        activeFilter={selectedNodeIds.size > 0 && graphData?.nodes ? 
+          (graphData.nodes.filter(n => selectedNodeIds.has(n.node_id)).every(n => n.node_type.toLowerCase() === 'person') && 
+           graphData.nodes.filter(n => n.node_type.toLowerCase() === 'person').every(n => selectedNodeIds.has(n.node_id)) ? 'person' :
+           graphData.nodes.filter(n => selectedNodeIds.has(n.node_id)).every(n => n.node_type.toLowerCase() === 'project') && 
+           graphData.nodes.filter(n => n.node_type.toLowerCase() === 'project').every(n => selectedNodeIds.has(n.node_id)) ? 'project' : null)
+          : null}
       />
 
       {showHelp && (
