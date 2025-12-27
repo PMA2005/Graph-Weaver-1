@@ -231,14 +231,14 @@ export default function Graph2DCanvas({
 
   const handleNodeClick = useCallback((node: GraphNode, e: React.MouseEvent) => {
     e.stopPropagation();
-    onNodeSelect(node, e.ctrlKey || e.metaKey);
+    onNodeSelect(node, { ctrlKey: e.ctrlKey, metaKey: e.metaKey });
   }, [onNodeSelect]);
 
   const handleBackgroundClick = useCallback(() => {
     if (viewMode === 'focused') {
       onResetView();
     } else {
-      onNodeSelect(null, false);
+      onNodeSelect(null, { ctrlKey: false, metaKey: false });
     }
   }, [viewMode, onResetView, onNodeSelect]);
 
