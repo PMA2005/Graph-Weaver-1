@@ -96,10 +96,13 @@ function useForceSimulation2D(
       existingPositions.set(n.id, { x: n.x, y: n.y });
     });
 
+    // Use full viewport for global layout
+    const legendHeight = 80;
+    const availableHeight = height - legendHeight;
     const centerX = width / 2;
-    const centerY = height / 2;
+    const centerY = availableHeight / 2;
     const spreadX = width * 0.4;
-    const spreadY = height * 0.35;
+    const spreadY = availableHeight * 0.32;
 
     const simNodes: SimNode[] = nodes.map((node, i) => {
       const existing = existingPositions.get(node.node_id);
@@ -140,6 +143,31 @@ function useForceSimulation2D(
       return force;
     };
 
+    // Create bounds force to keep nodes within visible area
+    const createBoundsForce = () => {
+      let nodes: SimNode[] = [];
+      const padding = 60;
+      const force = (alpha: number) => {
+        nodes.forEach(node => {
+          // Keep nodes within bounds
+          if (node.x < padding) {
+            node.vx = (node.vx || 0) + (padding - node.x) * alpha * 0.5;
+          }
+          if (node.x > width - padding) {
+            node.vx = (node.vx || 0) + (width - padding - node.x) * alpha * 0.5;
+          }
+          if (node.y < padding) {
+            node.vy = (node.vy || 0) + (padding - node.y) * alpha * 0.5;
+          }
+          if (node.y > availableHeight - padding) {
+            node.vy = (node.vy || 0) + (availableHeight - padding - node.y) * alpha * 0.5;
+          }
+        });
+      };
+      force.initialize = (n: SimNode[]) => { nodes = n; };
+      return force;
+    };
+
     const simulation = d3Force.forceSimulation(simNodes)
       .force('link', d3Force.forceLink(simLinks)
         .id((d: any) => d.id)
@@ -150,6 +178,7 @@ function useForceSimulation2D(
       .force('center', d3Force.forceCenter(centerX, centerY).strength(0.02))
       .force('collision', d3Force.forceCollide().radius(75).strength(0.95))
       .force('yAxis', createYForce())
+      .force('bounds', createBoundsForce())
       .alphaDecay(0.015)
       .velocityDecay(0.4);
 
@@ -228,6 +257,67 @@ export default function Graph2DCanvas({
   const positions = useForceSimulation2D(displayNodes, displayEdges, true, dimensions.width, dimensions.height);
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
+  const lastFocusedIdsRef = useRef<string>('');
+
+  // Auto-center and fit focused nodes in view when focus mode changes
+  useEffect(() => {
+    // Create a key for current focused nodes
+    const focusedKey = focusedNodes.map(n => n.node_id).sort().join(',');
+    
+    if (!isFocusMode) {
+      // Reset when leaving focus mode
+      setTransform({ x: 0, y: 0, scale: 1 });
+      lastFocusedIdsRef.current = '';
+      return;
+    }
+
+    // Only center if the focused nodes have changed
+    if (focusedKey === lastFocusedIdsRef.current) return;
+    if (Object.keys(positions).length === 0) return;
+
+    // Get positions of focused nodes only
+    const focusedPositions = focusedNodes
+      .map(n => positions[n.node_id])
+      .filter((p): p is [number, number] => !!p);
+
+    if (focusedPositions.length === 0) return;
+
+    // Mark that we've centered these nodes
+    lastFocusedIdsRef.current = focusedKey;
+
+    // Calculate bounding box
+    const xs = focusedPositions.map(p => p[0]);
+    const ys = focusedPositions.map(p => p[1]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    const contentWidth = Math.max(maxX - minX + 200, 300); // Add padding, minimum size
+    const contentHeight = Math.max(maxY - minY + 200, 200);
+    const nodeCenterX = (minX + maxX) / 2;
+    const nodeCenterY = (minY + maxY) / 2;
+
+    // Account for sidebar (approximately 350px) and legend (80px)
+    const sidebarWidth = 350;
+    const legendHeight = 80;
+    const availableWidth = dimensions.width - sidebarWidth;
+    const availableHeight = dimensions.height - legendHeight;
+
+    // Calculate scale to fit content with some padding
+    const scaleX = (availableWidth * 0.85) / contentWidth;
+    const scaleY = (availableHeight * 0.85) / contentHeight;
+    const scale = Math.min(scaleX, scaleY, 1.2); // Cap at 1.2x zoom
+
+    // Calculate translation to center the focused nodes in available space
+    const viewCenterX = availableWidth / 2;
+    const viewCenterY = availableHeight / 2;
+
+    const newX = viewCenterX - nodeCenterX * scale;
+    const newY = viewCenterY - nodeCenterY * scale;
+
+    setTransform({ x: newX, y: newY, scale: Math.max(0.5, scale) });
+  }, [isFocusMode, focusedNodes, dimensions.width, dimensions.height, positions]);
 
   const handleNodeClick = useCallback((node: GraphNode, e: React.MouseEvent) => {
     e.stopPropagation();
