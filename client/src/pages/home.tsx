@@ -73,6 +73,13 @@ export default function Home() {
     setSelectionOrder(order => order.filter(id => id !== nodeId));
   }, []);
 
+  const makePrimaryNode = useCallback((nodeId: string) => {
+    setSelectionOrder(order => {
+      const filtered = order.filter(id => id !== nodeId);
+      return [...filtered, nodeId];
+    });
+  }, []);
+
   const { data: graphData, isLoading, error } = useQuery<GraphData>({
     queryKey: ['/api/graph'],
   });
@@ -355,8 +362,7 @@ export default function Home() {
         onRemoveNode={removeNodeFromSelection}
         onResetView={handleResetView}
         onNodeClick={(node) => {
-          clearSelection();
-          toggleNodeSelection(node, false);
+          makePrimaryNode(node.node_id);
         }}
       />
 
