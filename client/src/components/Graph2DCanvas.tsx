@@ -433,6 +433,19 @@ export default function Graph2DCanvas({
         height={dimensions.height}
         style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
       >
+        <style>
+          {`
+            @keyframes pulseGlow {
+              0%, 100% { opacity: 0.3; transform: scale(1); }
+              50% { opacity: 0.8; transform: scale(1.1); }
+            }
+            .pulse-ring {
+              animation: pulseGlow 1.5s ease-in-out infinite;
+              transform-origin: center;
+              transform-box: fill-box;
+            }
+          `}
+        </style>
         <defs>
           {Object.entries(NODE_TYPE_COLORS).map(([type, color]) => (
             <filter key={`glow-${type}`} id={`glow-${type}`} x="-50%" y="-50%" width="200%" height="200%">
@@ -555,16 +568,18 @@ export default function Graph2DCanvas({
                       rx={8}
                       fill="none"
                       stroke={color}
-                      strokeWidth={1}
-                      strokeOpacity={0.4}
+                      strokeWidth={isSelected ? 2 : 1}
+                      strokeOpacity={isSelected ? undefined : 0.4}
+                      className={isSelected ? 'pulse-ring' : undefined}
                     />
                   ) : (
                     <circle
                       r={size + 6}
                       fill="none"
                       stroke={color}
-                      strokeWidth={1}
-                      strokeOpacity={0.4}
+                      strokeWidth={isSelected ? 2 : 1}
+                      strokeOpacity={isSelected ? undefined : 0.4}
+                      className={isSelected ? 'pulse-ring' : undefined}
                     />
                   )
                 )}
