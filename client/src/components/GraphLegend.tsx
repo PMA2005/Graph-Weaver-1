@@ -13,12 +13,9 @@ const LEGEND_ITEMS: LegendItem[] = [
 ];
 
 const RELATIONSHIP_COLORS: { type: string; label: string; color: string }[] = [
-  { type: 'assigned_to', label: 'Assigned', color: '#22c55e' },
-  { type: 'collaborates_with', label: 'Collaborates', color: '#3b82f6' },
-  { type: 'consults_on', label: 'Consults', color: '#eab308' },
-  { type: 'manages', label: 'Manages', color: '#f97316' },
-  { type: 'reports_to', label: 'Reports', color: '#ec4899' },
-  { type: 'works_on', label: 'Works On', color: '#a855f7' },
+  { type: 'assigned_to', label: 'Assigned To', color: '#22c55e' },
+  { type: 'collaborates_with', label: 'Collaborates With', color: '#3b82f6' },
+  { type: 'consults_on', label: 'Consults On', color: '#eab308' },
 ];
 
 interface GraphLegendProps {
