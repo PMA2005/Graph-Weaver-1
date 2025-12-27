@@ -176,35 +176,48 @@ export default function NodeDetailsSidebar({
                   Working On ({assignedProjects.length} projects)
                 </h3>
                 <div className="space-y-2">
-                  {assignedProjects.map((conn, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-2 rounded-lg border border-purple-500/20 bg-purple-500/5"
-                    >
-                      <button
-                        onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
-                        className="flex items-center gap-2 text-left hover:text-purple-400 transition-colors"
-                        data-testid={`button-project-${i}`}
+                  {assignedProjects.map((conn, i) => {
+                    const isOutgoing = conn.direction === 'outgoing';
+                    const relationshipLabel = conn.edge.relationship_type.replace(/_/g, ' ');
+                    const sourceName = isOutgoing ? node.display_name : conn.connectedNode!.display_name;
+                    const targetName = isOutgoing ? conn.connectedNode!.display_name : node.display_name;
+                    
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-2 rounded-lg border border-purple-500/20 bg-purple-500/5"
                       >
-                        <Folder className="w-4 h-4 text-purple-400" />
-                        <div>
-                          <p className="text-sm text-white">{conn.connectedNode!.display_name}</p>
-                          <p className="text-xs text-gray-500">{conn.edge.relationship_type.replace(/_/g, ' ')}</p>
-                        </div>
-                      </button>
-                      {onRemoveRelationship && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onRemoveRelationship(conn.edge)}
-                          className="h-6 w-6 text-gray-500 hover:text-red-400"
-                          data-testid={`button-remove-relationship-${i}`}
+                        <button
+                          onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
+                          className="flex items-center gap-2 text-left hover:text-purple-400 transition-colors"
+                          data-testid={`button-project-${i}`}
                         >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                          <Folder className="w-4 h-4 text-purple-400" />
+                          <div>
+                            <p className="text-sm text-white">{conn.connectedNode!.display_name}</p>
+                            <p className="text-xs text-purple-400/70 flex items-center gap-1">
+                              <span className="text-gray-500">{sourceName}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span>{relationshipLabel}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span className="text-gray-500">{targetName}</span>
+                            </p>
+                          </div>
+                        </button>
+                        {onRemoveRelationship && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onRemoveRelationship(conn.edge)}
+                            className="h-6 w-6 text-gray-500 hover:text-red-400"
+                            data-testid={`button-remove-relationship-${i}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -215,35 +228,48 @@ export default function NodeDetailsSidebar({
                   Team Members ({teamMembers.length} people)
                 </h3>
                 <div className="space-y-2">
-                  {teamMembers.map((conn, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-2 rounded-lg border border-cyan-500/20 bg-cyan-500/5"
-                    >
-                      <button
-                        onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
-                        className="flex items-center gap-2 text-left hover:text-cyan-400 transition-colors"
-                        data-testid={`button-member-${i}`}
+                  {teamMembers.map((conn, i) => {
+                    const isOutgoing = conn.direction === 'outgoing';
+                    const relationshipLabel = conn.edge.relationship_type.replace(/_/g, ' ');
+                    const sourceName = isOutgoing ? node.display_name : conn.connectedNode!.display_name;
+                    const targetName = isOutgoing ? conn.connectedNode!.display_name : node.display_name;
+                    
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-2 rounded-lg border border-cyan-500/20 bg-cyan-500/5"
                       >
-                        <User className="w-4 h-4 text-cyan-400" />
-                        <div>
-                          <p className="text-sm text-white">{conn.connectedNode!.display_name}</p>
-                          <p className="text-xs text-gray-500">{conn.edge.relationship_type.replace(/_/g, ' ')}</p>
-                        </div>
-                      </button>
-                      {onRemoveRelationship && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => onRemoveRelationship(conn.edge)}
-                          className="h-6 w-6 text-gray-500 hover:text-red-400"
-                          data-testid={`button-remove-member-${i}`}
+                        <button
+                          onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
+                          className="flex items-center gap-2 text-left hover:text-cyan-400 transition-colors"
+                          data-testid={`button-member-${i}`}
                         >
-                          <X className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
+                          <User className="w-4 h-4 text-cyan-400" />
+                          <div>
+                            <p className="text-sm text-white">{conn.connectedNode!.display_name}</p>
+                            <p className="text-xs text-cyan-400/70 flex items-center gap-1">
+                              <span className="text-gray-500">{sourceName}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span>{relationshipLabel}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span className="text-gray-500">{targetName}</span>
+                            </p>
+                          </div>
+                        </button>
+                        {onRemoveRelationship && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => onRemoveRelationship(conn.edge)}
+                            className="h-6 w-6 text-gray-500 hover:text-red-400"
+                            data-testid={`button-remove-member-${i}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -258,11 +284,20 @@ export default function NodeDetailsSidebar({
                     <button
                       key={i}
                       onClick={() => conn.connectedNode && onNodeNavigate(conn.connectedNode)}
-                      className="w-full flex items-center gap-2 p-2 rounded-lg border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors text-left"
+                      className="w-full flex items-center gap-2 p-2 rounded-lg border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-colors text-left"
                       data-testid={`button-collaborator-${i}`}
                     >
-                      <User className="w-4 h-4 text-cyan-400" />
-                      <span className="text-sm text-white">{conn.connectedNode!.display_name}</span>
+                      <User className="w-4 h-4 text-blue-400" />
+                      <div>
+                        <span className="text-sm text-white">{conn.connectedNode!.display_name}</span>
+                        <p className="text-xs text-blue-400/70 flex items-center gap-1">
+                          <span className="text-gray-500">{node.display_name}</span>
+                          <Link2 className="w-3 h-3" />
+                          <span>collaborates with</span>
+                          <Link2 className="w-3 h-3" />
+                          <span className="text-gray-500">{conn.connectedNode!.display_name}</span>
+                        </p>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -295,6 +330,11 @@ export default function NodeDetailsSidebar({
                     const ConnIcon = NODE_TYPE_ICONS[conn.connectedNode!.node_type.toLowerCase()] || User;
                     const isOutgoing = conn.direction === 'outgoing';
                     const relStyle = getRelationshipStyle(conn.edge.relationship_type);
+                    const relationshipLabel = conn.edge.relationship_type.replace(/_/g, ' ');
+                    
+                    const sourceName = isOutgoing ? node.display_name : conn.connectedNode!.display_name;
+                    const targetName = isOutgoing ? conn.connectedNode!.display_name : node.display_name;
+                    
                     return (
                       <div
                         key={i}
@@ -310,10 +350,12 @@ export default function NodeDetailsSidebar({
                             <p className="text-sm text-white truncate group-hover:text-cyan-300">
                               {conn.connectedNode!.display_name}
                             </p>
-                            <p className={`text-xs ${relStyle.text} flex items-center gap-1`}>
-                              {isOutgoing ? '' : <ArrowRight className="w-3 h-3 rotate-180" />}
-                              {conn.edge.relationship_type.replace(/_/g, ' ')}
-                              {isOutgoing ? <ArrowRight className="w-3 h-3" /> : ''}
+                            <p className={`text-xs ${relStyle.text} flex items-center gap-1 flex-wrap`}>
+                              <span className="text-gray-400">{sourceName}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span>{relationshipLabel}</span>
+                              <ArrowRight className="w-3 h-3" />
+                              <span className="text-gray-400">{targetName}</span>
                             </p>
                           </div>
                         </button>
