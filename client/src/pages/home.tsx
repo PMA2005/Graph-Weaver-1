@@ -178,7 +178,8 @@ export default function Home() {
     [selectionOrder, nodes]
   );
 
-  const primaryNode = selectedNodes[0] || null;
+  // Show the most recently selected node in the sidebar
+  const primaryNode = selectedNodes[selectedNodes.length - 1] || null;
 
   const getNeighborhood = useCallback((nodeId: string) => {
     const neighborEdges = edges.filter(e => e.source_node === nodeId || e.target_node === nodeId);
