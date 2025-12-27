@@ -321,10 +321,13 @@ export default function Graph2DCanvas({
             </filter>
           ))}
           {Object.entries(RELATIONSHIP_COLORS).map(([type, color]) => (
-            <filter key={`edge-glow-${type}`} id={`edge-glow-${type}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <filter key={`edge-glow-${type}`} id={`edge-glow-${type}`} x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+              <feFlood floodColor={color} floodOpacity="0.6" result="glowColor" />
+              <feComposite in="glowColor" in2="coloredBlur" operator="in" result="coloredGlow" />
               <feMerge>
-                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="coloredGlow" />
+                <feMergeNode in="coloredGlow" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
@@ -344,6 +347,8 @@ export default function Graph2DCanvas({
             const midX = (sourcePos[0] + targetPos[0]) / 2;
             const midY = (sourcePos[1] + targetPos[1]) / 2;
 
+            const filterType = RELATIONSHIP_COLORS[edge.relationship_type] ? edge.relationship_type : 'default';
+
             return (
               <line
                 key={`edge-${idx}`}
@@ -352,9 +357,9 @@ export default function Graph2DCanvas({
                 x2={targetPos[0]}
                 y2={targetPos[1]}
                 stroke={edgeColor}
-                strokeWidth={isHighlighted ? 3 : 2}
-                strokeOpacity={isFaded ? 0.15 : isHighlighted ? 0.9 : 0.5}
-                filter={isHighlighted ? `url(#edge-glow-${edge.relationship_type})` : undefined}
+                strokeWidth={isHighlighted ? 4 : 2.5}
+                strokeOpacity={isFaded ? 0.2 : isHighlighted ? 1 : 0.75}
+                filter={`url(#edge-glow-${filterType})`}
               />
             );
           })}
