@@ -424,7 +424,10 @@ export default function Graph2DCanvas({
           ))}
         </defs>
 
-        <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
+        <g 
+          transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}
+          style={{ transition: isPanning ? 'none' : 'transform 0.5s ease-out' }}
+        >
           {displayEdges.map((edge, idx) => {
             const sourcePos = positions[edge.source_node];
             const targetPos = positions[edge.target_node];
@@ -450,6 +453,9 @@ export default function Graph2DCanvas({
                 strokeWidth={isHighlighted ? 4 : 2.5}
                 strokeOpacity={isFaded ? 0.2 : isHighlighted ? 1 : 0.75}
                 filter={`url(#edge-glow-${filterType})`}
+                style={{
+                  transition: 'stroke-opacity 0.4s ease-out, stroke-width 0.3s ease-out'
+                }}
               />
             );
           })}
@@ -475,7 +481,11 @@ export default function Graph2DCanvas({
                 key={node.node_id}
                 transform={`translate(${pos[0]}, ${pos[1]}) scale(${scale})`}
                 onClick={(e) => handleNodeClick(node, e)}
-                style={{ cursor: 'pointer' }}
+                style={{ 
+                  cursor: 'pointer',
+                  transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
+                  opacity
+                }}
                 data-testid={`node-${node.node_id}`}
               >
                 {isProject ? (
@@ -486,20 +496,18 @@ export default function Graph2DCanvas({
                     height={size * 2}
                     rx={6}
                     fill={color}
-                    fillOpacity={opacity * 0.3}
+                    fillOpacity={0.3}
                     stroke={color}
                     strokeWidth={isSelected ? 3 : 2}
-                    strokeOpacity={opacity}
                     filter={isSelected || isFocused ? `url(#glow-project)` : undefined}
                   />
                 ) : (
                   <circle
                     r={size}
                     fill={color}
-                    fillOpacity={opacity * 0.3}
+                    fillOpacity={0.3}
                     stroke={color}
                     strokeWidth={isSelected ? 3 : 2}
-                    strokeOpacity={opacity}
                     filter={isSelected || isFocused ? `url(#glow-person)` : undefined}
                   />
                 )}
@@ -534,7 +542,6 @@ export default function Graph2DCanvas({
                   fill="#ffffff"
                   fontSize={isProject ? 10 : 9}
                   fontWeight={700}
-                  opacity={opacity}
                   style={{ 
                     textShadow: `0 0 4px rgba(0,0,0,0.8), 0 0 8px ${color}`,
                     pointerEvents: 'none'
