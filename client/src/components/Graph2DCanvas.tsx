@@ -22,7 +22,7 @@ interface Graph2DCanvasProps {
   edges: GraphEdge[];
   selectedNode: GraphNode | null;
   selectedNodeIds?: Set<string>;
-  onNodeSelect: (node: GraphNode | null, multiSelect?: boolean) => void;
+  onNodeSelect: (node: GraphNode | null, multiSelect?: boolean | { ctrlKey?: boolean; metaKey?: boolean }) => void;
   viewMode: ViewMode;
   focusedNodes: GraphNode[];
   focusedEdges: GraphEdge[];
@@ -396,7 +396,6 @@ export default function Graph2DCanvas({
             const color = getNodeColor(node);
             const size = getNodeSize(node);
             const isProject = node.node_type.toLowerCase() === 'project';
-            const typeLabel = NODE_TYPE_LABELS[node.node_type.toLowerCase()] || NODE_TYPE_LABELS.default;
 
             const scale = isSelected ? 1.3 : isFocused ? 1.15 : 1;
             const opacity = isFaded ? 0.25 : 1;
@@ -459,42 +458,20 @@ export default function Graph2DCanvas({
                   )
                 )}
 
-                <g transform={`translate(0, ${size + 25})`}>
-                  <rect
-                    x={-60}
-                    y={-18}
-                    width={120}
-                    height={42}
-                    rx={6}
-                    fill="rgba(10, 14, 39, 0.95)"
-                    stroke={color}
-                    strokeWidth={2}
-                    strokeOpacity={opacity}
-                  />
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    y={-4}
-                    fill="#ffffff"
-                    fontSize={14}
-                    fontWeight={700}
-                    style={{ textShadow: `0 0 10px ${color}` }}
-                  >
-                    {node.display_name.length > 12 ? node.display_name.slice(0, 12) + '...' : node.display_name}
-                  </text>
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    y={12}
-                    fill={color}
-                    fontSize={10}
-                    fontWeight={600}
-                    fontFamily="monospace"
-                    style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                  >
-                    {typeLabel}
-                  </text>
-                </g>
+                <text
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill="#ffffff"
+                  fontSize={isProject ? 10 : 9}
+                  fontWeight={700}
+                  opacity={opacity}
+                  style={{ 
+                    textShadow: `0 0 4px rgba(0,0,0,0.8), 0 0 8px ${color}`,
+                    pointerEvents: 'none'
+                  }}
+                >
+                  {node.display_name.length > 8 ? node.display_name.slice(0, 7) + '..' : node.display_name}
+                </text>
               </g>
             );
           })}
