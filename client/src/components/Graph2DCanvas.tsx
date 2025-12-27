@@ -345,42 +345,17 @@ export default function Graph2DCanvas({
             const midY = (sourcePos[1] + targetPos[1]) / 2;
 
             return (
-              <g key={`edge-${idx}`}>
-                <line
-                  x1={sourcePos[0]}
-                  y1={sourcePos[1]}
-                  x2={targetPos[0]}
-                  y2={targetPos[1]}
-                  stroke={edgeColor}
-                  strokeWidth={isHighlighted ? 3 : 2}
-                  strokeOpacity={isFaded ? 0.15 : isHighlighted ? 0.9 : 0.5}
-                  filter={isHighlighted ? `url(#edge-glow-${edge.relationship_type})` : undefined}
-                />
-                {isHighlighted && (
-                  <g transform={`translate(${midX}, ${midY})`}>
-                    <rect
-                      x={-40}
-                      y={-10}
-                      width={80}
-                      height={20}
-                      rx={4}
-                      fill="rgba(10, 14, 39, 0.95)"
-                      stroke={edgeColor}
-                      strokeWidth={1}
-                    />
-                    <text
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill={edgeColor}
-                      fontSize={10}
-                      fontFamily="monospace"
-                      fontWeight={600}
-                    >
-                      {edge.relationship_type.replace(/_/g, ' ')}
-                    </text>
-                  </g>
-                )}
-              </g>
+              <line
+                key={`edge-${idx}`}
+                x1={sourcePos[0]}
+                y1={sourcePos[1]}
+                x2={targetPos[0]}
+                y2={targetPos[1]}
+                stroke={edgeColor}
+                strokeWidth={isHighlighted ? 3 : 2}
+                strokeOpacity={isFaded ? 0.15 : isHighlighted ? 0.9 : 0.5}
+                filter={isHighlighted ? `url(#edge-glow-${edge.relationship_type})` : undefined}
+              />
             );
           })}
 
