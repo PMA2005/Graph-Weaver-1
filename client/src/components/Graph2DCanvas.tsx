@@ -291,18 +291,24 @@ export default function Graph2DCanvas({
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
   const lastFocusedIdsRef = useRef<string>('');
+  const wasFocusModeRef = useRef<boolean>(false);
 
-  // Auto-center and fit focused nodes in view when focus mode changes
+  // Reset transform only when transitioning FROM focus mode TO full view
   useEffect(() => {
-    // Create a key for current focused nodes
-    const focusedKey = focusedNodes.map(n => n.node_id).sort().join(',');
-    
-    if (!isFocusMode) {
-      // Reset when leaving focus mode
+    if (!isFocusMode && wasFocusModeRef.current) {
+      // Just transitioned from focus mode to full view
       setTransform({ x: 0, y: 0, scale: 1 });
       lastFocusedIdsRef.current = '';
-      return;
     }
+    wasFocusModeRef.current = isFocusMode;
+  }, [isFocusMode]);
+
+  // Auto-center and fit focused nodes in view when entering focus mode or changing focused nodes
+  useEffect(() => {
+    if (!isFocusMode) return;
+
+    // Create a key for current focused nodes
+    const focusedKey = focusedNodes.map(n => n.node_id).sort().join(',');
 
     // Only center if the focused nodes have changed
     if (focusedKey === lastFocusedIdsRef.current) return;
