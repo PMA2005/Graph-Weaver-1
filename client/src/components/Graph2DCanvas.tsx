@@ -82,6 +82,8 @@ function useForceSimulation2D(
   const [positions, setPositions] = useState<Record<string, [number, number]>>({});
   const simulationRef = useRef<d3Force.Simulation<SimNode, SimLink> | null>(null);
   const nodesRef = useRef<SimNode[]>([]);
+  const smoothedPositionsRef = useRef<Record<string, [number, number]>>({});
+  const lerpFactor = 0.18; // Lower = smoother but slower response
 
   useEffect(() => {
     if (!isActive || nodes.length === 0 || width === 0 || height === 0) {
@@ -136,31 +138,50 @@ function useForceSimulation2D(
         nodes.forEach(node => {
           const isProject = node.node.node_type.toLowerCase() === 'project';
           const targetY = isProject ? centerY - spreadY : centerY + spreadY;
-          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.6;
+          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.25;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
       return force;
     };
 
-    // Create bounds force to keep nodes within visible area
+    // Create gentle drift force for continuous floating motion
+    const createDriftForce = () => {
+      let nodes: SimNode[] = [];
+      let time = 0;
+      const force = (alpha: number) => {
+        time += 0.02;
+        nodes.forEach((node, i) => {
+          // Gentle orbital drift - each node has unique phase
+          const phase = (i / nodes.length) * Math.PI * 2;
+          const driftStrength = 0.3;
+          node.vx = (node.vx || 0) + Math.sin(time + phase) * driftStrength * alpha;
+          node.vy = (node.vy || 0) + Math.cos(time + phase * 1.5) * driftStrength * 0.5 * alpha;
+        });
+      };
+      force.initialize = (n: SimNode[]) => { nodes = n; };
+      return force;
+    };
+
+    // Create bounds force - gentle nudges that increase near edges
     const createBoundsForce = () => {
       let nodes: SimNode[] = [];
-      const padding = 60;
+      const padding = 80;
       const force = (alpha: number) => {
+        const strength = 0.8;
         nodes.forEach(node => {
-          // Keep nodes within bounds
+          // Gentle nudge back toward center when near edges
           if (node.x < padding) {
-            node.vx = (node.vx || 0) + (padding - node.x) * alpha * 0.5;
+            node.vx = (node.vx || 0) + (padding - node.x) * alpha * strength;
           }
           if (node.x > width - padding) {
-            node.vx = (node.vx || 0) + (width - padding - node.x) * alpha * 0.5;
+            node.vx = (node.vx || 0) + (width - padding - node.x) * alpha * strength;
           }
           if (node.y < padding) {
-            node.vy = (node.vy || 0) + (padding - node.y) * alpha * 0.5;
+            node.vy = (node.vy || 0) + (padding - node.y) * alpha * strength;
           }
           if (node.y > availableHeight - padding) {
-            node.vy = (node.vy || 0) + (availableHeight - padding - node.y) * alpha * 0.5;
+            node.vy = (node.vy || 0) + (availableHeight - padding - node.y) * alpha * strength;
           }
         });
       };
@@ -172,21 +193,33 @@ function useForceSimulation2D(
       .force('link', d3Force.forceLink(simLinks)
         .id((d: any) => d.id)
         .distance(180)
-        .strength(0.25)
+        .strength(0.12)
       )
-      .force('charge', d3Force.forceManyBody().strength(-800).distanceMax(600))
-      .force('center', d3Force.forceCenter(centerX, centerY).strength(0.02))
-      .force('collision', d3Force.forceCollide().radius(75).strength(0.95))
+      .force('charge', d3Force.forceManyBody().strength(-400).distanceMax(500))
+      .force('center', d3Force.forceCenter(centerX, centerY).strength(0.015))
+      .force('collision', d3Force.forceCollide().radius(70).strength(0.6))
       .force('yAxis', createYForce())
       .force('bounds', createBoundsForce())
+      .force('drift', createDriftForce())
       .alphaDecay(0.015)
-      .velocityDecay(0.4);
+      .velocityDecay(0.55)
+      .alphaTarget(0.08); // Keep simulation running for continuous floating motion
 
     simulation.on('tick', () => {
       const newPositions: Record<string, [number, number]> = {};
       simNodes.forEach(node => {
-        newPositions[node.id] = [node.x, node.y];
+        const prev = smoothedPositionsRef.current[node.id];
+        if (prev) {
+          // Lerp: smoothly interpolate toward target position
+          const smoothedX = prev[0] + (node.x - prev[0]) * lerpFactor;
+          const smoothedY = prev[1] + (node.y - prev[1]) * lerpFactor;
+          newPositions[node.id] = [smoothedX, smoothedY];
+        } else {
+          // First frame - use exact position
+          newPositions[node.id] = [node.x, node.y];
+        }
       });
+      smoothedPositionsRef.current = newPositions;
       setPositions(newPositions);
     });
 
