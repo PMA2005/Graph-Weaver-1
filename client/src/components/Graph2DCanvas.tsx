@@ -502,7 +502,7 @@ export default function Graph2DCanvas({
                 x2={targetPos[0]}
                 y2={targetPos[1]}
                 stroke={edgeColor}
-                strokeWidth={isHighlighted ? 4 : 2.5}
+                strokeWidth={(isHighlighted ? 4 : 2.5) / Math.min(Math.max(transform.scale, 0.3), 4)}
                 strokeOpacity={isFaded ? 0.2 : isHighlighted ? 1 : 0.75}
                 filter={`url(#edge-glow-${filterType})`}
                 style={{
@@ -594,7 +594,7 @@ export default function Graph2DCanvas({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fill="#ffffff"
-                  fontSize={isProject ? 10 : 9}
+                  fontSize={(isProject ? 10 : 9) / Math.min(Math.max(transform.scale, 0.3), 4)}
                   fontWeight={700}
                   style={{ 
                     textShadow: `0 0 4px rgba(0,0,0,0.8), 0 0 8px ${color}`,
