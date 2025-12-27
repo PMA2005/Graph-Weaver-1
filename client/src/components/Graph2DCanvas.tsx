@@ -483,7 +483,7 @@ export default function Graph2DCanvas({
                 onClick={(e) => handleNodeClick(node, e)}
                 style={{ 
                   cursor: 'pointer',
-                  transition: 'transform 0.3s ease-out, opacity 0.4s ease-out',
+                  transition: 'opacity 0.4s ease-out',
                   opacity
                 }}
                 data-testid={`node-${node.node_id}`}
