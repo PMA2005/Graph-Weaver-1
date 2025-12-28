@@ -348,6 +348,8 @@ export default function Home() {
   }
 
   const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || showHistory || showShare || !!deleteTarget || showHelp;
+  // Keep graph rendered when ShareModal is open so PNG export can capture the SVG
+  const shouldHideGraph = showAddNode || showEditNode || showAddEdge || showHistory || !!deleteTarget || showHelp;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -369,7 +371,7 @@ export default function Home() {
 
       <div className="absolute inset-0 pt-14 sm:pt-16 pb-16 sm:pb-20">
         <div className="w-full h-full relative flex items-center justify-center">
-          {!isAnyModalOpen && (
+          {!shouldHideGraph && (
             <Graph2DCanvas
               key={graphKey}
               nodes={filteredNodes}
