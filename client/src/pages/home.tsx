@@ -336,6 +336,11 @@ export default function Home() {
         onHelp={() => setShowHelp(true)}
         onSettings={() => toast({ title: 'Settings', description: 'Settings panel coming soon' })}
         onAddNode={() => setShowAddNode(true)}
+        nodes={nodes}
+        onNodeSelect={(node) => {
+          setTypeFilter(null); // Clear type filter so searched node is visible
+          handleNodeSelect(node, false);
+        }}
       />
 
       <div className="absolute inset-0 pt-16 pb-20">

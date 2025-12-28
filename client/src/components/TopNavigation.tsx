@@ -1,11 +1,14 @@
-import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/ThemeProvider';
+import type { GraphNode } from '@shared/schema';
 
 interface TopNavigationProps {
   onResetView?: () => void;
@@ -14,6 +17,8 @@ interface TopNavigationProps {
   onHelp?: () => void;
   onSettings?: () => void;
   onAddNode?: () => void;
+  nodes?: GraphNode[];
+  onNodeSelect?: (node: GraphNode) => void;
 }
 
 export default function TopNavigation({
@@ -23,7 +28,39 @@ export default function TopNavigation({
   onHelp,
   onSettings,
   onAddNode,
+  nodes = [],
+  onNodeSelect,
 }: TopNavigationProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Filter nodes based on search query
+  const suggestions = searchQuery.length > 0
+    ? nodes.filter(node => 
+        node.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.node_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        node.node_id.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectNode = (node: GraphNode) => {
+    onNodeSelect?.(node);
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
+
   return (
     <header 
       className="fixed top-0 left-0 right-0 h-16 z-50 flex items-center justify-between px-6"
@@ -55,6 +92,83 @@ export default function TopNavigation({
             Interactive Visualization
           </p>
         </div>
+      </div>
+
+      {/* Search Bar */}
+      <div ref={searchRef} className="relative flex-1 max-w-md mx-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/50" />
+          <Input
+            type="text"
+            placeholder="Search people & projects..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSuggestions(true);
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            className="pl-10 bg-slate-900/80 border-cyan-500/30 text-white placeholder:text-cyan-400/40 focus:border-cyan-400 focus:ring-cyan-400/20"
+            data-testid="input-search"
+          />
+        </div>
+        
+        {/* Suggestions Dropdown */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div 
+            className="absolute top-full left-0 right-0 mt-1 rounded-md overflow-hidden z-50"
+            style={{
+              background: 'rgba(10, 14, 39, 0.98)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
+            }}
+            data-testid="search-suggestions"
+          >
+            {suggestions.map((node) => (
+              <button
+                key={node.node_id}
+                onClick={() => handleSelectNode(node)}
+                className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors hover:bg-cyan-500/10"
+                data-testid={`search-result-${node.node_id}`}
+              >
+                <div 
+                  className="p-1.5 rounded"
+                  style={{
+                    background: node.node_type.toLowerCase() === 'person' 
+                      ? 'rgba(0, 255, 255, 0.2)' 
+                      : 'rgba(139, 92, 246, 0.2)',
+                  }}
+                >
+                  {node.node_type.toLowerCase() === 'person' ? (
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
+                  ) : (
+                    <FolderKanban className="w-3.5 h-3.5 text-purple-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-white font-medium truncate">
+                    {node.display_name}
+                  </div>
+                  <div className="text-xs text-cyan-400/60 capitalize">
+                    {node.node_type}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {/* No results message */}
+        {showSuggestions && searchQuery.length > 0 && suggestions.length === 0 && (
+          <div 
+            className="absolute top-full left-0 right-0 mt-1 px-4 py-3 rounded-md text-sm text-cyan-400/60"
+            style={{
+              background: 'rgba(10, 14, 39, 0.98)',
+              border: '1px solid rgba(0, 255, 255, 0.3)',
+            }}
+          >
+            No matching people or projects found
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
