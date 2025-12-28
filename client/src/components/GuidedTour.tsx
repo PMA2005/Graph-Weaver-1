@@ -133,30 +133,34 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     };
   }, [isOpen, isReady, currentStep, step?.targetSelector]);
 
-  // Navigation handlers - completely independent of DOM state
-  const handleNext = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (step?.isFinal) {
-      onComplete();
-    } else if (currentStep < tourSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
+  // Navigation handlers - bounds checking inside state updater for race safety
+  const goNext = useCallback(() => {
+    setCurrentStep(prev => {
+      const nextStep = prev + 1;
+      if (prev === tourSteps.length - 1) {
+        // Final step - complete the tour
+        setTimeout(() => onComplete(), 0);
+        return prev;
+      }
+      if (nextStep < tourSteps.length) {
+        return nextStep;
+      }
+      return prev;
+    });
+  }, [onComplete]);
 
-  const handlePrev = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
+  const goPrev = useCallback(() => {
+    setCurrentStep(prev => {
+      if (prev > 0) {
+        return prev - 1;
+      }
+      return prev;
+    });
+  }, []);
 
-  const handleSkip = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const skipTour = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
   if (!isOpen || !isReady || !step) return null;
 
@@ -215,7 +219,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         style={{
           background: 'rgba(0, 0, 0, 0.60)',
         }}
-        onClick={handleSkip}
+        onClick={skipTour}
       />
 
       {/* Spotlight on target element */}
@@ -234,9 +238,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         />
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip - high z-index ensures buttons are clickable */}
       <div
-        className="absolute w-[calc(100vw-32px)] sm:w-[360px] max-w-[360px] p-4 sm:p-6 rounded-lg mx-4 sm:mx-0"
+        className="absolute w-[calc(100vw-32px)] sm:w-[360px] max-w-[360px] p-4 sm:p-6 rounded-lg mx-4 sm:mx-0 z-[101]"
         style={{
           ...getTooltipPosition(),
           background: 'linear-gradient(135deg, rgba(20, 24, 59, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%)',
@@ -248,8 +252,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       >
         {/* Close button */}
         <button
-          onClick={(e) => { e.stopPropagation(); onClose(); }}
-          className="absolute top-3 right-3 text-gray-400 hover:text-cyan-400 transition-colors"
+          onClick={(e) => { e.stopPropagation(); skipTour(); }}
+          className="absolute top-3 right-3 text-gray-400 hover:text-cyan-400 transition-colors z-[102]"
           data-testid="button-tour-close"
         >
           <X className="w-5 h-5" />
@@ -298,8 +302,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
           {!step.isFinal && (
             <Button
               variant="ghost"
-              onClick={handleSkip}
-              className="text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={(e) => { e.stopPropagation(); skipTour(); }}
+              className="text-gray-400 hover:text-white hover:bg-gray-800 z-[102]"
               data-testid="button-tour-skip"
             >
               Skip Tour
@@ -310,8 +314,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
             {!isFirstStep && (
               <Button
                 variant="outline"
-                onClick={handlePrev}
-                className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10"
+                onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                className="border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10 z-[102]"
                 data-testid="button-tour-prev"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
@@ -319,8 +323,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
               </Button>
             )}
             <Button
-              onClick={handleNext}
-              className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
+              onClick={(e) => { e.stopPropagation(); goNext(); }}
+              className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30 z-[102]"
               data-testid="button-tour-next"
             >
               {step.isFinal ? 'Start Exploring' : 'Next'}
