@@ -309,23 +309,59 @@ function useSpiralLayout(
     const outerRadiusY = availableHeight * 0.38;
     
     // Inner arc for projects - positioned in upper portion
-    const projectRadiusX = width * 0.22;
-    const projectRadiusY = availableHeight * 0.12;
+    // Calculate minimum spacing to prevent overlap using angular separation
+    const projectNodeWidth = 36; // Width of project node rect + padding
+    const minProjectSpacing = 16; // Minimum gap between project nodes
+    const totalProjectWidth = projectNodeWidth + minProjectSpacing;
+    const rowSpacing = 45; // Vertical spacing between rows
     
-    // Projects span the upper arc (from about -160° to -20°, i.e., upper portion)
-    // In radians: -160° = -2.79, -20° = -0.35
-    const projectArcStart = -Math.PI + 0.35; // About -145 degrees (upper left)
-    const projectArcEnd = -0.35; // About -20 degrees (upper right)
-    const projectArcSpan = projectArcEnd - projectArcStart;
-
-    // Place projects evenly along upper arc
+    // Base radius for projects
+    const baseRadiusX = width * 0.34;
+    const baseRadiusY = availableHeight * 0.16;
+    
+    // Available arc span (nearly full upper semicircle)
+    const maxArcSpan = Math.PI * 0.85; // About 153 degrees
+    const arcCenter = -Math.PI / 2; // -90 degrees (top center)
+    
+    // Calculate how many projects can fit on one row with minimum spacing
+    const minAngularSpacing = 2 * Math.asin(Math.min(totalProjectWidth / (2 * baseRadiusX), 0.8));
+    const maxProjectsPerRow = Math.max(1, Math.floor(maxArcSpan / minAngularSpacing) + 1);
+    
+    // Determine number of rows needed
+    const numRows = Math.ceil(projects.length / maxProjectsPerRow);
+    
+    // Place projects across multiple rows if needed
     projects.forEach((project, projectIndex) => {
-      const t = projects.length > 1 ? projectIndex / (projects.length - 1) : 0.5;
-      const angle = projectArcStart + t * projectArcSpan;
+      const rowIndex = Math.floor(projectIndex / maxProjectsPerRow);
+      const indexInRow = projectIndex % maxProjectsPerRow;
+      const projectsInThisRow = Math.min(maxProjectsPerRow, projects.length - rowIndex * maxProjectsPerRow);
       
-      const projectX = centerX + Math.cos(angle) * projectRadiusX;
-      const projectY = centerY + Math.sin(angle) * projectRadiusY;
-      result[project.node_id] = [projectX, projectY];
+      // Each row has slightly smaller radius (stacked inward)
+      const rowRadiusX = baseRadiusX - rowIndex * 25;
+      const rowRadiusY = baseRadiusY - rowIndex * 15;
+      
+      // Calculate arc span for this row
+      const arcSpanForRow = projectsInThisRow > 1 
+        ? Math.min((projectsInThisRow - 1) * minAngularSpacing, maxArcSpan)
+        : 0;
+      const rowArcStart = arcCenter - arcSpanForRow / 2;
+      
+      let angle: number;
+      if (projectsInThisRow === 1) {
+        angle = arcCenter; // Single project at top center
+      } else {
+        const t = indexInRow / (projectsInThisRow - 1);
+        angle = rowArcStart + t * arcSpanForRow;
+      }
+      
+      const projectX = centerX + Math.cos(angle) * rowRadiusX;
+      const projectY = centerY + Math.sin(angle) * rowRadiusY + rowIndex * rowSpacing;
+      
+      // Clamp to viewport bounds with padding
+      const clampedX = Math.max(50, Math.min(width - 50, projectX));
+      const clampedY = Math.max(35, Math.min(centerY - 10, projectY));
+      
+      result[project.node_id] = [clampedX, clampedY];
     });
 
     // Place people evenly around the full oval perimeter
