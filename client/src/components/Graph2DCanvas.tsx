@@ -304,76 +304,158 @@ function useSpiralLayout(
 
     const result: Record<string, [number, number]> = {};
 
-    // Outer ring for people - full oval perimeter
-    const outerRadiusX = width * 0.42;
-    const outerRadiusY = availableHeight * 0.38;
+    // Animation buffer - add extra spacing to account for floating movement
+    const animationBuffer = 18; // Animation amplitude is 15, add margin
+    const zoneGap = 45; // Gap between project zone and people zone
     
-    // Inner arc for projects - positioned in upper portion
-    // Calculate minimum spacing to prevent overlap using angular separation
-    const projectNodeWidth = 36; // Width of project node rect + padding
-    const minProjectSpacing = 16; // Minimum gap between project nodes
-    const totalProjectWidth = projectNodeWidth + minProjectSpacing;
-    const rowSpacing = 45; // Vertical spacing between rows
+    // Helper function: calculate min angular spacing for a given radius
+    const calcMinAngularSpacing = (radiusX: number, nodeSpacing: number) => {
+      const safeRadius = Math.max(radiusX, 50); // Ensure radius is always positive
+      const ratio = Math.min(nodeSpacing / (2 * safeRadius), 0.95);
+      return 2 * Math.asin(ratio);
+    };
     
-    // Base radius for projects
-    const baseRadiusX = width * 0.34;
-    const baseRadiusY = availableHeight * 0.16;
+    // === VIEWPORT-AWARE ZONE CALCULATION ===
+    // Reserve top 35% for projects (max), bottom 65% for people (min)
+    const maxProjectZoneHeight = availableHeight * 0.35;
+    const minPeopleZoneHeight = availableHeight * 0.50;
+    const projectZoneTop = 45;
     
-    // Available arc span (nearly full upper semicircle)
-    const maxArcSpan = Math.PI * 0.85; // About 153 degrees
-    const arcCenter = -Math.PI / 2; // -90 degrees (top center)
+    // === PROJECT LAYOUT ===
+    const projectNodeWidth = 36;
+    const minProjectGap = 22;
+    const totalProjectSpacing = projectNodeWidth + minProjectGap + animationBuffer;
     
-    // Calculate how many projects can fit on one row with minimum spacing
-    const minAngularSpacing = 2 * Math.asin(Math.min(totalProjectWidth / (2 * baseRadiusX), 0.8));
-    const maxProjectsPerRow = Math.max(1, Math.floor(maxArcSpan / minAngularSpacing) + 1);
+    // Base radius for projects - must stay positive
+    const baseProjectRadiusX = Math.max(width * 0.34, 120);
+    const minProjectRadiusX = 80; // Minimum radius to prevent collapse
+    const radiusDecrement = 25; // How much radius shrinks per row
     
-    // Determine number of rows needed
-    const numRows = Math.ceil(projects.length / maxProjectsPerRow);
+    // Available arc span
+    const maxArcSpan = Math.PI * 0.85;
+    const arcCenter = -Math.PI / 2;
     
-    // Place projects across multiple rows if needed
-    projects.forEach((project, projectIndex) => {
-      const rowIndex = Math.floor(projectIndex / maxProjectsPerRow);
-      const indexInRow = projectIndex % maxProjectsPerRow;
-      const projectsInThisRow = Math.min(maxProjectsPerRow, projects.length - rowIndex * maxProjectsPerRow);
+    // Calculate max rows that fit in project zone
+    const baseRowSpacing = 48;
+    const maxProjectRows = Math.max(1, Math.floor(maxProjectZoneHeight / baseRowSpacing));
+    
+    // First pass: calculate capacity per row (with radius staying positive)
+    let rowCapacities: number[] = [];
+    for (let r = 0; r < maxProjectRows; r++) {
+      const rowRadiusX = Math.max(baseProjectRadiusX - r * radiusDecrement, minProjectRadiusX);
+      const minAngular = calcMinAngularSpacing(rowRadiusX, totalProjectSpacing);
+      rowCapacities.push(Math.max(1, Math.floor(maxArcSpan / minAngular) + 1));
+    }
+    const totalProjectCapacity = rowCapacities.reduce((a, b) => a + b, 0);
+    
+    // Determine actual rows needed
+    let projectsToPlace = [...projects];
+    let actualProjectRows = 0;
+    let tempCount = projects.length;
+    for (let r = 0; r < maxProjectRows && tempCount > 0; r++) {
+      tempCount -= rowCapacities[r];
+      actualProjectRows++;
+    }
+    
+    // Calculate actual project zone height
+    const projectZoneHeight = actualProjectRows * baseRowSpacing;
+    const projectZoneBottom = projectZoneTop + projectZoneHeight + zoneGap;
+    
+    // Distribute projects across rows
+    let remainingProjects = [...projects];
+    let projectRowIndex = 0;
+    const projectPlacements: { project: GraphNode; x: number; y: number }[] = [];
+    
+    while (remainingProjects.length > 0 && projectRowIndex < maxProjectRows) {
+      const rowRadiusX = Math.max(baseProjectRadiusX - projectRowIndex * radiusDecrement, minProjectRadiusX);
+      const rowMinAngularSpacing = calcMinAngularSpacing(rowRadiusX, totalProjectSpacing);
+      const maxOnThisRow = Math.max(1, Math.floor(maxArcSpan / rowMinAngularSpacing) + 1);
       
-      // Each row has slightly smaller radius (stacked inward)
-      const rowRadiusX = baseRadiusX - rowIndex * 25;
-      const rowRadiusY = baseRadiusY - rowIndex * 15;
-      
-      // Calculate arc span for this row
-      const arcSpanForRow = projectsInThisRow > 1 
-        ? Math.min((projectsInThisRow - 1) * minAngularSpacing, maxArcSpan)
+      const projectsForRow = remainingProjects.splice(0, maxOnThisRow);
+      const actualArcSpan = projectsForRow.length > 1 
+        ? (projectsForRow.length - 1) * rowMinAngularSpacing
         : 0;
-      const rowArcStart = arcCenter - arcSpanForRow / 2;
+      const rowArcStart = arcCenter - actualArcSpan / 2;
       
-      let angle: number;
-      if (projectsInThisRow === 1) {
-        angle = arcCenter; // Single project at top center
-      } else {
-        const t = indexInRow / (projectsInThisRow - 1);
-        angle = rowArcStart + t * arcSpanForRow;
-      }
+      projectsForRow.forEach((project, indexInRow) => {
+        let angle: number;
+        if (projectsForRow.length === 1) {
+          angle = arcCenter;
+        } else {
+          const t = indexInRow / (projectsForRow.length - 1);
+          angle = rowArcStart + t * actualArcSpan;
+        }
+        
+        const x = centerX + Math.cos(angle) * rowRadiusX;
+        const y = projectZoneTop + projectRowIndex * baseRowSpacing;
+        const clampedX = Math.max(55, Math.min(width - 55, x));
+        
+        projectPlacements.push({ project, x: clampedX, y });
+      });
       
-      const projectX = centerX + Math.cos(angle) * rowRadiusX;
-      const projectY = centerY + Math.sin(angle) * rowRadiusY + rowIndex * rowSpacing;
-      
-      // Clamp to viewport bounds with padding
-      const clampedX = Math.max(50, Math.min(width - 50, projectX));
-      const clampedY = Math.max(35, Math.min(centerY - 10, projectY));
-      
-      result[project.node_id] = [clampedX, clampedY];
+      projectRowIndex++;
+    }
+    
+    projectPlacements.forEach(({ project, x, y }) => {
+      result[project.node_id] = [x, y];
     });
-
-    // Place people evenly around the full oval perimeter
-    // Start from bottom and go clockwise
-    persons.forEach((person, personIndex) => {
-      const t = personIndex / persons.length;
-      // Start from bottom (Math.PI/2) and go full circle
-      const angle = Math.PI / 2 + t * 2 * Math.PI;
+    
+    // === PEOPLE LAYOUT ===
+    const personNodeWidth = 32;
+    const minPersonGap = 26;
+    const totalPersonSpacing = personNodeWidth + minPersonGap + animationBuffer;
+    const personRingSpacing = 50;
+    
+    // People zone - ensure minimum height and proper positioning
+    const effectivePeopleZoneTop = Math.min(projectZoneBottom, availableHeight - minPeopleZoneHeight);
+    const peopleZoneHeight = availableHeight - effectivePeopleZoneTop - 40; // 40px bottom margin
+    const peopleZoneCenterY = effectivePeopleZoneTop + peopleZoneHeight / 2;
+    
+    // Base radius for people - constrained to fit in zone
+    const basePersonRadiusX = Math.min(width * 0.40, (width - 100) / 2);
+    const basePersonRadiusY = Math.min(peopleZoneHeight * 0.42, availableHeight * 0.28);
+    
+    // Horseshoe arc avoiding top where projects are
+    const peopleArcStart = -0.25; // About -14 degrees
+    const peopleArcEnd = Math.PI + 0.25; // About 194 degrees
+    const peopleArcSpan = peopleArcEnd - peopleArcStart;
+    
+    const calcRingCapacity = (radiusX: number) => {
+      const minAngular = calcMinAngularSpacing(radiusX, totalPersonSpacing);
+      return Math.max(1, Math.floor(peopleArcSpan / minAngular));
+    };
+    
+    let remainingPersons = [...persons];
+    let personRingIndex = 0;
+    const personPlacements: { person: GraphNode; x: number; y: number }[] = [];
+    const maxPersonRings = 5; // Limit rings to prevent overflow
+    
+    while (remainingPersons.length > 0 && personRingIndex < maxPersonRings) {
+      const ringRadiusX = basePersonRadiusX + personRingIndex * personRingSpacing;
+      const ringRadiusY = basePersonRadiusY + personRingIndex * (personRingSpacing * 0.65);
+      const ringCapacity = calcRingCapacity(ringRadiusX);
       
-      const personX = centerX + Math.cos(angle) * outerRadiusX;
-      const personY = centerY + Math.sin(angle) * outerRadiusY;
-      result[person.node_id] = [personX, personY];
+      const peopleForRing = remainingPersons.splice(0, ringCapacity);
+      
+      peopleForRing.forEach((person, indexInRing) => {
+        const t = peopleForRing.length > 1 
+          ? indexInRing / (peopleForRing.length - 1)
+          : 0.5;
+        const angle = peopleArcStart + t * peopleArcSpan;
+        
+        const x = centerX + Math.cos(angle) * ringRadiusX;
+        const rawY = peopleZoneCenterY + Math.sin(angle) * ringRadiusY;
+        // Clamp Y to stay in people zone with buffer for animation
+        const y = Math.max(effectivePeopleZoneTop + 25, Math.min(availableHeight - 30, rawY));
+        
+        personPlacements.push({ person, x, y });
+      });
+      
+      personRingIndex++;
+    }
+    
+    personPlacements.forEach(({ person, x, y }) => {
+      result[person.node_id] = [x, y];
     });
 
     return result;
