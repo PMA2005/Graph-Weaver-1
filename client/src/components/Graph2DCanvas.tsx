@@ -235,7 +235,7 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Spiral layout with golden angle distribution and floating animation
+// Organized layout: Projects in grid rows at top, Persons in pyramid at bottom
 function useSpiralLayout(
   nodes: GraphNode[],
   width: number,
@@ -247,7 +247,6 @@ function useSpiralLayout(
   const animationRef = useRef<number | null>(null);
   const timeRef = useRef(0);
 
-  // Calculate base spiral positions
   useEffect(() => {
     if (nodes.length === 0 || width === 0 || height === 0 || !isActive) {
       if (animationRef.current) {
@@ -258,52 +257,97 @@ function useSpiralLayout(
     }
 
     const legendHeight = 80;
-    const availableHeight = height - legendHeight;
+    const headerHeight = 80;
+    const availableHeight = height - legendHeight - headerHeight;
     const centerX = width / 2;
-    const centerY = availableHeight / 2;
 
-    // Separate by type - projects at top, persons at bottom (like force graph)
+    // Separate by type
     const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
     const persons = nodes.filter(n => n.node_type.toLowerCase() === 'person');
 
     const basePos: Record<string, [number, number]> = {};
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
 
-    // Projects spiral at top of screen
-    const projectCenterY = centerY - availableHeight * 0.25;
+    // --- PROJECTS: Grid layout at top ---
+    const projectSpacingX = 90;
+    const projectSpacingY = 70;
+    const projectsPerRow = Math.max(1, Math.ceil(Math.sqrt(projects.length * 1.5)));
+    const projectRows = Math.ceil(projects.length / projectsPerRow);
+    const projectStartY = headerHeight + 60;
+    const projectGridWidth = (projectsPerRow - 1) * projectSpacingX;
+
     projects.forEach((node, i) => {
-      const angle = i * goldenAngle;
-      const radius = 50 + 30 * Math.sqrt(i);
-      const x = centerX + Math.cos(angle) * radius;
-      const y = projectCenterY + Math.sin(angle) * radius * 0.6; // Flatten vertically
+      const row = Math.floor(i / projectsPerRow);
+      const col = i % projectsPerRow;
+      const nodesInThisRow = Math.min(projectsPerRow, projects.length - row * projectsPerRow);
+      const rowWidth = (nodesInThisRow - 1) * projectSpacingX;
+      const rowStartX = centerX - rowWidth / 2;
+      const x = rowStartX + col * projectSpacingX;
+      const y = projectStartY + row * projectSpacingY;
       basePos[node.node_id] = [x, y];
     });
 
-    // Persons spiral at bottom of screen
-    const personCenterY = centerY + availableHeight * 0.2;
-    persons.forEach((node, i) => {
-      const angle = i * goldenAngle + Math.PI; // Offset angle
-      const radius = 80 + 35 * Math.sqrt(i);
-      const x = centerX + Math.cos(angle) * radius;
-      const y = personCenterY + Math.sin(angle) * radius * 0.5; // Flatten vertically
-      basePos[node.node_id] = [x, y];
+    // --- PERSONS: Pyramid layout at bottom ---
+    const personSpacingX = 70;
+    const personSpacingY = 60;
+    const projectsEndY = projectStartY + projectRows * projectSpacingY + 40;
+    const personStartY = Math.max(projectsEndY, availableHeight * 0.35);
+
+    // Calculate pyramid rows (1, 2, 3, 4... nodes per row)
+    let personsPlaced = 0;
+    let pyramidRow = 0;
+    const pyramidData: { row: number; startIndex: number; count: number }[] = [];
+    
+    while (personsPlaced < persons.length) {
+      const nodesInRow = pyramidRow + 1;
+      const actualCount = Math.min(nodesInRow, persons.length - personsPlaced);
+      pyramidData.push({ row: pyramidRow, startIndex: personsPlaced, count: actualCount });
+      personsPlaced += actualCount;
+      pyramidRow++;
+    }
+
+    // If too many rows, use wider rows
+    const maxPyramidRows = Math.floor((availableHeight - personStartY) / personSpacingY);
+    if (pyramidData.length > maxPyramidRows && maxPyramidRows > 0) {
+      // Recalculate with more nodes per row
+      pyramidData.length = 0;
+      personsPlaced = 0;
+      pyramidRow = 0;
+      const baseNodesPerRow = Math.ceil(persons.length / maxPyramidRows);
+      while (personsPlaced < persons.length) {
+        const nodesInRow = baseNodesPerRow + pyramidRow;
+        const actualCount = Math.min(nodesInRow, persons.length - personsPlaced);
+        pyramidData.push({ row: pyramidRow, startIndex: personsPlaced, count: actualCount });
+        personsPlaced += actualCount;
+        pyramidRow++;
+      }
+    }
+
+    pyramidData.forEach(({ row, startIndex, count }) => {
+      const rowWidth = (count - 1) * personSpacingX;
+      const rowStartX = centerX - rowWidth / 2;
+      for (let i = 0; i < count; i++) {
+        const person = persons[startIndex + i];
+        const x = rowStartX + i * personSpacingX;
+        const y = personStartY + row * personSpacingY;
+        basePos[person.node_id] = [x, y];
+      }
     });
 
     basePositionsRef.current = basePos;
 
-    // Animate with gentle floating motion
+    // Animate with gentle floating motion (small amplitude to prevent overlap)
     const animate = () => {
-      timeRef.current += 0.015;
+      timeRef.current += 0.012;
       const t = timeRef.current;
 
       const animatedPos: Record<string, [number, number]> = {};
       let i = 0;
       for (const nodeId in basePos) {
         const [baseX, baseY] = basePos[nodeId];
-        const phase = i * 0.7; // Unique phase per node
-        // Gentle orbital drift
-        const driftX = Math.sin(t + phase) * 8 + Math.cos(t * 0.7 + phase * 1.3) * 5;
-        const driftY = Math.cos(t * 0.8 + phase) * 6 + Math.sin(t * 0.5 + phase * 0.9) * 4;
+        const phase = i * 0.5;
+        // Very gentle drift (small amplitude)
+        const driftX = Math.sin(t + phase) * 3 + Math.cos(t * 0.6 + phase * 1.2) * 2;
+        const driftY = Math.cos(t * 0.7 + phase) * 2.5 + Math.sin(t * 0.4 + phase * 0.8) * 1.5;
         animatedPos[nodeId] = [baseX + driftX, baseY + driftY];
         i++;
       }
@@ -312,7 +356,6 @@ function useSpiralLayout(
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    // Start animation
     animate();
 
     return () => {
