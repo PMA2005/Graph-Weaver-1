@@ -325,7 +325,7 @@ function useSpiralLayout(
     basePositionsRef.current = basePositions;
 
     const animate = () => {
-      timeRef.current += 0.015;
+      timeRef.current += 0.008; // Slower for smoother motion
       const time = timeRef.current;
       
       const newPositions: Record<string, [number, number]> = {};
@@ -333,11 +333,11 @@ function useSpiralLayout(
       Object.entries(basePositionsRef.current).forEach(([id, [baseX, baseY]], index) => {
         // Unique phase for each node based on index
         const phase = (index * 0.7) % (Math.PI * 2);
-        const amplitude = 4;
+        const amplitude = 10; // Larger amplitude for more visible movement
         
-        // Gentle floating motion
-        const dx = Math.sin(time + phase) * amplitude;
-        const dy = Math.cos(time * 0.8 + phase * 1.3) * amplitude * 0.7;
+        // Smooth orbital floating motion (like force layout)
+        const dx = Math.sin(time + phase) * amplitude + Math.sin(time * 0.5 + phase * 1.5) * amplitude * 0.3;
+        const dy = Math.cos(time * 0.7 + phase * 1.3) * amplitude * 0.8 + Math.cos(time * 0.3 + phase) * amplitude * 0.2;
         
         newPositions[id] = [baseX + dx, baseY + dy];
       });
