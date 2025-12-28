@@ -37,9 +37,9 @@ const tourSteps: TourStep[] = [
     icon: <MousePointer className="w-6 h-6" />,
   },
   {
-    id: 'legend',
-    title: 'Legend & Layout',
-    description: 'The legend shows what each color means. Switch between Force (dynamic) and Spiral (organized) layouts. Filter by node type using the People/Projects buttons.',
+    id: 'layout',
+    title: 'Layout Controls',
+    description: 'Switch between Force (dynamic) and Spiral (organized) layouts. Filter by node type using the People/Projects buttons at the bottom.',
     targetSelector: '[data-testid="graph-legend"]',
     position: 'top',
     icon: <Eye className="w-6 h-6" />,
@@ -134,7 +134,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   }, [isOpen, isReady, currentStep, step?.targetSelector]);
 
   // Navigation handlers - completely independent of DOM state
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (step?.isFinal) {
       onComplete();
     } else if (currentStep < tourSteps.length - 1) {
@@ -142,13 +144,17 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     onClose();
   };
 
@@ -237,11 +243,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
           border: '2px solid rgba(0, 255, 255, 0.4)',
           boxShadow: '0 0 40px rgba(0, 255, 255, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5)',
         }}
+        onClick={(e) => e.stopPropagation()}
         data-testid="tour-tooltip"
       >
         {/* Close button */}
         <button
-          onClick={handleSkip}
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="absolute top-3 right-3 text-gray-400 hover:text-cyan-400 transition-colors"
           data-testid="button-tour-close"
         >
