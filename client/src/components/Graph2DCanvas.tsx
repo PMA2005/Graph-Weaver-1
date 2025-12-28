@@ -278,7 +278,7 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Radial hub-and-spoke layout: projects as central hubs, people grouped around their connected projects
+// Elliptical ring layout: projects and people share one large oval band, grouped by connections
 function useSpiralLayout(
   nodes: GraphNode[],
   edges: GraphEdge[],
@@ -336,11 +336,10 @@ function useSpiralLayout(
       }
     });
 
-    // Calculate radii based on available space
-    const maxRadius = Math.min(width, availableHeight) * 0.42;
-    const projectRadius = maxRadius * 0.4; // Inner ring for projects
-    const personInnerRadius = maxRadius * 0.65; // Start of person rings
-    const personOuterRadius = maxRadius * 1.0; // End of person rings
+    // Ellipse radii - wide oval shape
+    const radiusX = width * 0.42;  // Horizontal radius
+    const radiusY = availableHeight * 0.38;  // Vertical radius (slightly smaller for oval)
+    const bandThickness = 35; // Radial jitter for ring thickness
 
     // Group persons by their primary project connection
     const projectGroups: Record<string, GraphNode[]> = {};
@@ -353,7 +352,6 @@ function useSpiralLayout(
     persons.forEach(person => {
       const connectedProjects = personToProjects[person.node_id] || [];
       if (connectedProjects.length > 0) {
-        // Assign to first connected project for grouping
         const primaryProject = connectedProjects[0];
         if (projectGroups[primaryProject]) {
           projectGroups[primaryProject].push(person);
@@ -365,78 +363,89 @@ function useSpiralLayout(
       }
     });
 
-    // Calculate how much angular space each project needs based on connected people
-    // Minimum wedge size for projects with no connections
-    const minWedgeSize = 0.15; // radians
-    const projectCount = projects.length;
-    const totalConnected = persons.length - unconnectedPersons.length;
+    // Calculate total nodes to place (projects + their people as groups)
+    // Each project group = 1 project + N people, placed together on the ring
+    const totalSlots = nodes.length; // Total nodes to distribute
     
-    // Calculate weighted angular sizes for each project
-    const projectWeights: number[] = projects.map(p => {
-      const connectedCount = projectGroups[p.node_id].length;
-      return Math.max(connectedCount, 1); // At least 1 for empty projects
-    });
-    const totalWeight = projectWeights.reduce((a, b) => a + b, 0) + (unconnectedPersons.length > 0 ? unconnectedPersons.length : 0);
-    
-    // Place projects and their connected people around the circle
+    // Calculate weighted angular spans - projects with more people get more space
+    const groupSizes: { projectId: string; size: number }[] = projects.map(p => ({
+      projectId: p.node_id,
+      size: 1 + projectGroups[p.node_id].length // Project itself + connected people
+    }));
+    const unconnectedSize = unconnectedPersons.length;
+    const totalSize = groupSizes.reduce((a, g) => a + g.size, 0) + unconnectedSize;
+
+    // Seeded random for consistent jitter
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+
     let currentAngle = -Math.PI / 2; // Start from top
-    
+
+    // Place each project group along the ellipse
     projects.forEach((project, projectIndex) => {
       const projectPersons = projectGroups[project.node_id];
-      const weight = projectWeights[projectIndex];
+      const groupSize = 1 + projectPersons.length;
+      const angularSpan = (2 * Math.PI * groupSize) / totalSize;
       
-      // Angular size for this project's wedge
-      const wedgeSize = (2 * Math.PI * weight) / totalWeight;
+      // Project goes at the start/center of its group's span
+      const projectAngle = currentAngle + angularSpan * 0.15; // Slight offset from start
       
-      // Project sits at the center of its wedge
-      const projectAngle = currentAngle + wedgeSize / 2;
-      const projectX = centerX + Math.cos(projectAngle) * projectRadius;
-      const projectY = centerY + Math.sin(projectAngle) * projectRadius;
+      // Calculate position on ellipse with slight inward offset for projects
+      const projRadiusX = radiusX * 0.92;
+      const projRadiusY = radiusY * 0.92;
+      const projectX = centerX + Math.cos(projectAngle) * projRadiusX;
+      const projectY = centerY + Math.sin(projectAngle) * projRadiusY;
       result[project.node_id] = [projectX, projectY];
       
-      // Place connected people in an arc around the project's angle
+      // Place connected people spread out after the project in the same span
       if (projectPersons.length > 0) {
-        const personWedge = wedgeSize * 0.85; // Use 85% of wedge for people
-        const startPersonAngle = projectAngle - personWedge / 2;
+        const personStartAngle = currentAngle + angularSpan * 0.25;
+        const personAngularRange = angularSpan * 0.7;
         
         projectPersons.forEach((person, personIndex) => {
           const personCount = projectPersons.length;
-          // Spread evenly within the wedge
-          const angleOffset = personCount > 1
-            ? (personIndex / (personCount - 1)) * personWedge
-            : 0;
-          const angle = startPersonAngle + angleOffset;
+          // Distribute evenly across the angular range
+          const t = personCount > 1 ? personIndex / (personCount - 1) : 0.5;
+          const angle = personStartAngle + t * personAngularRange;
           
-          // Vary radius for visual interest - create multiple rings
-          const ringIndex = personIndex % 3;
-          const radiusT = 0.2 + ringIndex * 0.35; // 0.2, 0.55, 0.9
-          const radius = personInnerRadius + (personOuterRadius - personInnerRadius) * radiusT;
+          // Add radial jitter based on person index for ring thickness
+          const jitterSeed = personIndex + projectIndex * 100;
+          const radialJitter = (seededRandom(jitterSeed) - 0.5) * bandThickness * 2;
           
-          const x = centerX + Math.cos(angle) * radius;
-          const y = centerY + Math.sin(angle) * radius;
+          // Alternate between inner and outer positions for variety
+          const depthOffset = (personIndex % 3 - 1) * bandThickness * 0.6;
+          
+          const personRadiusX = radiusX + radialJitter + depthOffset;
+          const personRadiusY = radiusY + radialJitter + depthOffset;
+          
+          const x = centerX + Math.cos(angle) * personRadiusX;
+          const y = centerY + Math.sin(angle) * personRadiusY;
           result[person.node_id] = [x, y];
         });
       }
       
-      currentAngle += wedgeSize;
+      currentAngle += angularSpan;
     });
 
     // Place unconnected persons in remaining space
     if (unconnectedPersons.length > 0) {
-      const unconnectedWedge = (2 * Math.PI * unconnectedPersons.length) / totalWeight;
-      const startAngle = currentAngle;
+      const angularSpan = (2 * Math.PI * unconnectedSize) / totalSize;
       
       unconnectedPersons.forEach((person, i) => {
-        const angleOffset = unconnectedPersons.length > 1
-          ? (i / (unconnectedPersons.length - 1)) * unconnectedWedge * 0.85 + unconnectedWedge * 0.075
-          : unconnectedWedge * 0.5;
-        const angle = startAngle + angleOffset;
-        const ringIndex = i % 3;
-        const radiusT = 0.2 + ringIndex * 0.35;
-        const radius = personInnerRadius + (personOuterRadius - personInnerRadius) * radiusT;
+        const t = unconnectedPersons.length > 1 ? i / (unconnectedPersons.length - 1) : 0.5;
+        const angle = currentAngle + t * angularSpan * 0.9 + angularSpan * 0.05;
         
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
+        const jitterSeed = i + 9999;
+        const radialJitter = (seededRandom(jitterSeed) - 0.5) * bandThickness * 2;
+        const depthOffset = (i % 3 - 1) * bandThickness * 0.6;
+        
+        const personRadiusX = radiusX + radialJitter + depthOffset;
+        const personRadiusY = radiusY + radialJitter + depthOffset;
+        
+        const x = centerX + Math.cos(angle) * personRadiusX;
+        const y = centerY + Math.sin(angle) * personRadiusY;
         result[person.node_id] = [x, y];
       });
     }
