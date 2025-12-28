@@ -34,7 +34,7 @@ export default function FocusOverlay({
 
   return (
     <div 
-      className="absolute top-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-lg"
+      className="absolute top-16 sm:top-20 left-2 right-2 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-lg"
       style={{
         background: 'rgba(10, 14, 39, 0.85)',
         backdropFilter: 'blur(12px)',
@@ -45,12 +45,12 @@ export default function FocusOverlay({
       data-testid="overlay-focus"
     >
       {viewMode === 'focused' && (
-        <div className="flex items-center gap-2 text-cyan-400 text-sm font-tech uppercase tracking-wider">
+        <div className="hidden sm:flex items-center gap-2 text-cyan-400 text-sm font-tech uppercase tracking-wider">
           <span className="opacity-60">Focused on:</span>
         </div>
       )}
       
-      <div className="flex items-center gap-2 flex-wrap max-w-[600px]">
+      <div className="flex items-center gap-2 flex-wrap flex-1 max-w-full sm:max-w-[600px]">
         {selectedNodes.map((node, index) => {
           const colors = NODE_TYPE_COLORS[node.node_type.toLowerCase()] || NODE_TYPE_COLORS.person;
           const Icon = node.node_type.toLowerCase() === 'project' ? Folder : User;

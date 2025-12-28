@@ -119,7 +119,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   if (!isOpen) return null;
 
   const getTooltipPosition = (): React.CSSProperties => {
-    if (step.position === 'center' || !targetRect) {
+    const isMobile = window.innerWidth < 640;
+    
+    if (step.position === 'center' || !targetRect || isMobile) {
       return {
         top: '50%',
         left: '50%',
@@ -128,20 +130,18 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }
 
     const padding = 20;
-    const tooltipWidth = 360;
-    const tooltipHeight = 200;
 
     switch (step.position) {
       case 'top':
         return {
           bottom: `${window.innerHeight - targetRect.top + padding}px`,
-          left: `${targetRect.left + targetRect.width / 2}px`,
+          left: `${Math.max(16, Math.min(targetRect.left + targetRect.width / 2, window.innerWidth - 200))}px`,
           transform: 'translateX(-50%)',
         };
       case 'bottom':
         return {
           top: `${targetRect.bottom + padding}px`,
-          left: `${targetRect.left + targetRect.width / 2}px`,
+          left: `${Math.max(16, Math.min(targetRect.left + targetRect.width / 2, window.innerWidth - 200))}px`,
           transform: 'translateX(-50%)',
         };
       case 'left':
@@ -194,7 +194,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
       {/* Tooltip */}
       <div
-        className="absolute w-[360px] p-6 rounded-lg"
+        className="absolute w-[calc(100vw-32px)] sm:w-[360px] max-w-[360px] p-4 sm:p-6 rounded-lg mx-4 sm:mx-0"
         style={{
           ...getTooltipPosition(),
           background: 'linear-gradient(135deg, rgba(20, 24, 59, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%)',
@@ -225,12 +225,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
         {/* Content */}
         <h3 
-          className="text-xl font-bold text-white mb-2"
+          className="text-lg sm:text-xl font-bold text-white mb-2"
           style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.3)' }}
         >
           {step.title}
         </h3>
-        <p className="text-gray-300 text-sm leading-relaxed mb-6">
+        <p className="text-gray-300 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6">
           {step.description}
         </p>
 

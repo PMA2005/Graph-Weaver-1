@@ -349,7 +349,7 @@ export default function Home() {
         }}
       />
 
-      <div className="absolute inset-0 pt-16 pb-20">
+      <div className="absolute inset-0 pt-14 sm:pt-16 pb-16 sm:pb-20">
         <div className="w-full h-full relative flex items-center justify-center">
           {!isAnyModalOpen && (
             <Graph2DCanvas

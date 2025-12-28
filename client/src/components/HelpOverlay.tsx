@@ -32,13 +32,13 @@ const HELP_ITEMS = [
 export default function HelpOverlay({ onClose, onStartTour }: HelpOverlayProps) {
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-8"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 overflow-y-auto"
       style={{ background: 'rgb(0, 0, 0)' }}
       onClick={onClose}
       data-testid="overlay-help"
     >
       <div 
-        className="relative max-w-lg w-full rounded-xl p-8 border border-cyan-500/30"
+        className="relative max-w-lg w-full rounded-xl p-4 sm:p-8 border border-cyan-500/30 my-auto"
         style={{
           background: 'rgb(20, 24, 59)',
           boxShadow: '0 0 50px rgba(0, 255, 255, 0.2)',
@@ -67,7 +67,7 @@ export default function HelpOverlay({ onClose, onStartTour }: HelpOverlayProps) 
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {HELP_ITEMS.map((item, i) => (
             <div 
               key={i}
@@ -93,12 +93,12 @@ export default function HelpOverlay({ onClose, onStartTour }: HelpOverlayProps) 
           ))}
         </div>
 
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           {onStartTour && (
             <Button
               onClick={onStartTour}
               variant="outline"
-              className="px-6 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+              className="w-full sm:w-auto px-6 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
               data-testid="button-start-tour"
             >
               <Play className="w-4 h-4 mr-2" />
@@ -107,7 +107,7 @@ export default function HelpOverlay({ onClose, onStartTour }: HelpOverlayProps) 
           )}
           <Button
             onClick={onClose}
-            className="px-8 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
+            className="w-full sm:w-auto px-8 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
             data-testid="button-got-it"
           >
             Got it, let me explore!

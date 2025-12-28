@@ -40,9 +40,9 @@ export default function GraphLegend({ onFilterType, activeFilter, layoutMode = '
       }}
       data-testid="graph-legend"
     >
-      <div className="flex items-center justify-center gap-6 px-4 py-2">
-        <div className="flex items-center gap-4">
-          <span className="font-tech text-xs text-cyan-400 uppercase tracking-widest">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 px-2 sm:px-4 py-2">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <span className="hidden sm:inline font-tech text-xs text-cyan-400 uppercase tracking-widest">
             Nodes
           </span>
           {LEGEND_ITEMS.map((item) => {
@@ -53,7 +53,7 @@ export default function GraphLegend({ onFilterType, activeFilter, layoutMode = '
               <button
                 key={item.type}
                 onClick={() => onFilterType?.(isActive ? null : item.type)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded border transition-all ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded border transition-all ${
                   isActive 
                     ? 'border-cyan-400 bg-cyan-500/10' 
                     : 'border-transparent hover:border-cyan-500/30 hover:bg-cyan-500/5'
@@ -70,11 +70,36 @@ export default function GraphLegend({ onFilterType, activeFilter, layoutMode = '
               </button>
             );
           })}
+          
+          <div className="w-px h-4 bg-cyan-500/30 sm:hidden" />
+          
+          <button
+            onClick={() => onLayoutChange?.('force')}
+            className={`sm:hidden flex items-center gap-1 px-2 py-1 rounded border transition-all ${
+              layoutMode === 'force'
+                ? 'border-cyan-400 bg-cyan-500/10'
+                : 'border-transparent hover:border-cyan-500/30 hover:bg-cyan-500/5'
+            }`}
+            data-testid="button-layout-force-mobile"
+          >
+            <Orbit className="w-3.5 h-3.5 text-cyan-400" />
+          </button>
+          <button
+            onClick={() => onLayoutChange?.('spiral')}
+            className={`sm:hidden flex items-center gap-1 px-2 py-1 rounded border transition-all ${
+              layoutMode === 'spiral'
+                ? 'border-cyan-400 bg-cyan-500/10'
+                : 'border-transparent hover:border-cyan-500/30 hover:bg-cyan-500/5'
+            }`}
+            data-testid="button-layout-spiral-mobile"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          </button>
         </div>
 
-        <div className="w-px h-6 bg-cyan-500/30" />
+        <div className="hidden sm:block w-px h-6 bg-cyan-500/30" />
 
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <span className="font-tech text-xs text-cyan-400 uppercase tracking-widest">
             Layout
           </span>
@@ -106,24 +131,24 @@ export default function GraphLegend({ onFilterType, activeFilter, layoutMode = '
 
         <div className="w-px h-6 bg-cyan-500/30" />
 
-        <div className="flex items-center gap-3">
-          <span className="font-tech text-xs text-cyan-400 uppercase tracking-widest">
+        <div className="flex items-center gap-1.5 sm:gap-3 overflow-x-auto">
+          <span className="hidden sm:inline font-tech text-xs text-cyan-400 uppercase tracking-widest shrink-0">
             Relationships
           </span>
           {RELATIONSHIP_COLORS.map((rel) => (
             <div 
               key={rel.type}
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1 sm:gap-1.5 shrink-0"
               data-testid={`legend-relationship-${rel.type}`}
             >
               <div 
-                className="w-4 h-0.5 rounded"
+                className="w-3 sm:w-4 h-0.5 rounded"
                 style={{ 
                   backgroundColor: rel.color,
                   boxShadow: `0 0 4px ${rel.color}`,
                 }}
               />
-              <span className="text-xs text-gray-400">
+              <span className="text-[10px] sm:text-xs text-gray-400">
                 {rel.label}
               </span>
             </div>

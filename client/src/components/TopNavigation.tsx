@@ -63,7 +63,7 @@ export default function TopNavigation({
 
   return (
     <header 
-      className="fixed top-0 left-0 right-0 h-16 z-50 flex items-center justify-between px-6"
+      className="fixed top-0 left-0 right-0 h-14 sm:h-16 z-50 flex items-center justify-between px-3 sm:px-6"
       style={{
         background: 'rgba(10, 14, 39, 0.95)',
         borderBottom: '2px solid rgba(0, 255, 255, 0.3)',
@@ -71,17 +71,17 @@ export default function TopNavigation({
       }}
       data-testid="nav-top"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <div 
-          className="p-2 rounded-lg"
+          className="p-1.5 sm:p-2 rounded-lg"
           style={{
             background: 'rgba(0, 255, 255, 0.1)',
             boxShadow: '0 0 20px rgba(0, 255, 255, 0.3)',
           }}
         >
-          <Network className="w-6 h-6 text-cyan-400" />
+          <Network className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
         </div>
-        <div>
+        <div className="hidden sm:block">
           <h1 
             className="font-display text-xl font-bold text-white"
             style={{ textShadow: '0 0 10px rgba(0, 255, 255, 0.5)' }}
@@ -95,7 +95,7 @@ export default function TopNavigation({
       </div>
 
       {/* Search Bar */}
-      <div ref={searchRef} className="relative flex-1 max-w-md mx-6">
+      <div ref={searchRef} className="relative flex-1 max-w-[180px] sm:max-w-md mx-2 sm:mx-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-400/50" />
           <Input
@@ -174,14 +174,22 @@ export default function TopNavigation({
       <div className="flex items-center gap-2">
         <Button
           onClick={onAddNode}
-          className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
+          size="icon"
+          className="sm:hidden bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
+          data-testid="button-add-node-mobile"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+        <Button
+          onClick={onAddNode}
+          className="hidden sm:flex bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
           data-testid="button-add-node"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Node
         </Button>
 
-        <div className="w-px h-6 bg-cyan-500/30 mx-2" />
+        <div className="hidden sm:block w-px h-6 bg-cyan-500/30 mx-2" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -198,7 +206,7 @@ export default function TopNavigation({
           <TooltipContent>Reset View</TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-6 bg-cyan-500/30 mx-2" />
+        <div className="hidden sm:block w-px h-6 bg-cyan-500/30 mx-2" />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -221,7 +229,7 @@ export default function TopNavigation({
               size="icon"
               variant="ghost"
               onClick={onImport}
-              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              className="hidden sm:flex text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
               data-testid="button-import"
             >
               <Upload className="w-4 h-4" />
@@ -251,7 +259,7 @@ export default function TopNavigation({
               size="icon"
               variant="ghost"
               onClick={onSettings}
-              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              className="hidden sm:flex text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
               data-testid="button-settings"
             >
               <Settings className="w-4 h-4" />
@@ -259,8 +267,6 @@ export default function TopNavigation({
           </TooltipTrigger>
           <TooltipContent>Settings</TooltipContent>
         </Tooltip>
-
-        <div className="w-px h-6 bg-cyan-500/30 mx-2" />
 
         <Tooltip>
           <TooltipTrigger asChild>

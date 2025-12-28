@@ -105,19 +105,25 @@ export default function NodeDetailsSidebar({
     : [];
 
   return (
-    <div 
-      className="fixed right-4 top-20 bottom-24 w-96 z-50 animate-in slide-in-from-right duration-300"
-      data-testid="sidebar-node-details"
-    >
+    <>
+      {/* Mobile backdrop */}
       <div 
-        className="h-full rounded-lg border border-cyan-500/30 overflow-hidden flex flex-col"
-        style={{
-          background: 'rgba(10, 14, 39, 0.75)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          boxShadow: '0 0 30px rgba(0, 255, 255, 0.1)',
-        }}
+        className="fixed inset-0 bg-black/60 z-40 md:hidden"
+        onClick={onClose}
+      />
+      <div 
+        className="fixed inset-x-2 top-16 bottom-20 md:inset-auto md:right-4 md:top-20 md:bottom-24 md:w-96 z-50 animate-in slide-in-from-right duration-300"
+        data-testid="sidebar-node-details"
       >
+        <div 
+          className="h-full rounded-lg border border-cyan-500/30 overflow-hidden flex flex-col"
+          style={{
+            background: 'rgba(10, 14, 39, 0.95)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            boxShadow: '0 0 30px rgba(0, 255, 255, 0.1)',
+          }}
+        >
         <div className="p-4 border-b border-cyan-500/20 flex items-start justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div 
@@ -401,5 +407,6 @@ export default function NodeDetailsSidebar({
         </div>
       </div>
     </div>
+    </>
   );
 }

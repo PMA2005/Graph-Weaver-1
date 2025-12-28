@@ -207,6 +207,15 @@
 - Directional relationship display (incoming vs outgoing)
 - Confirmation dialogs before destructive actions
 
+## Responsive Design
+- **Breakpoints**: 640px (sm) for tablets, default for phones
+- **Header**: Compact on mobile - icon only, smaller search, fewer buttons
+- **Sidebar**: Full-screen overlay with backdrop on mobile, fixed width on desktop
+- **Legend**: Single row with icon-only layout toggles on mobile
+- **Modals**: Reduced padding on mobile, full-width buttons
+- **Tour**: Centered tooltips on mobile for better visibility
+- **Focus Overlay**: Full-width on mobile, centered on desktop
+
 ## Guided Tour Design
 - **Overlay**: Dark semi-transparent backdrop (85% opacity) with spotlight on target elements
 - **Spotlight**: Cyan border glow around highlighted element (box-shadow cutout effect)

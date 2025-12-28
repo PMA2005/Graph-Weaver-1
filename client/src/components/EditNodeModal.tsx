@@ -37,13 +37,13 @@ export default function EditNodeModal({ node, onClose, onSubmit, isLoading }: Ed
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-8"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
       style={{ background: 'rgba(0, 0, 0, 0.8)' }}
       onClick={onClose}
       data-testid="modal-edit-node"
     >
       <div 
-        className="relative max-w-md w-full rounded-xl p-6 border border-cyan-500/30"
+        className="relative max-w-md w-full rounded-xl p-4 sm:p-6 border border-cyan-500/30"
         style={{
           background: 'rgb(10, 14, 39)',
           boxShadow: '0 0 50px rgba(0, 255, 255, 0.15)',

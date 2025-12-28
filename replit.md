@@ -97,6 +97,12 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 - **Help Overlay**: Quick reference with option to restart tour
 
 ## Recent Changes
+- Added mobile responsiveness for all screen sizes (phones, tablets, desktops)
+  - Header adapts with compact layout on phones
+  - Sidebar becomes full-screen overlay on mobile with backdrop
+  - Tour tooltips center on mobile for better visibility
+  - Legend shows compact controls on small screens
+  - All modals adapt to small screen sizes
 - Added guided tour feature with step-by-step walkthrough highlighting key UI elements for new users
 - Added search bar to TopNavigation with autocomplete dropdown for finding nodes by name/type
 - Implemented dual layout modes: Force-directed and Spiral with toggle buttons in legend
