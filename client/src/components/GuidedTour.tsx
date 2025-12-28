@@ -135,26 +135,20 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
   // Navigation handlers - bounds checking inside state updater for race safety
   const goNext = useCallback(() => {
-    console.log('[Tour] goNext called, current step:', currentStep);
     setCurrentStep(prev => {
-      console.log('[Tour] setCurrentStep prev:', prev, 'total steps:', tourSteps.length);
       const nextStep = prev + 1;
       if (prev === tourSteps.length - 1) {
-        console.log('[Tour] Final step reached, completing tour');
         setTimeout(() => onComplete(), 0);
         return prev;
       }
       if (nextStep < tourSteps.length) {
-        console.log('[Tour] Moving to step:', nextStep);
         return nextStep;
       }
-      console.log('[Tour] No change, staying at:', prev);
       return prev;
     });
-  }, [onComplete, currentStep]);
+  }, [onComplete]);
 
   const goPrev = useCallback(() => {
-    console.log('[Tour] goPrev called');
     setCurrentStep(prev => {
       if (prev > 0) {
         return prev - 1;
@@ -164,7 +158,6 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   }, []);
 
   const skipTour = useCallback(() => {
-    console.log('[Tour] skipTour called');
     onClose();
   }, [onClose]);
 
@@ -219,13 +212,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
   return (
     <div className="fixed inset-0 z-[100]" data-testid="guided-tour">
-      {/* Overlay with spotlight effect */}
+      {/* Overlay with spotlight effect - pointer-events:none so clicks pass through to tooltip */}
       <div 
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: 'rgba(0, 0, 0, 0.60)',
         }}
-        onClick={skipTour}
       />
 
       {/* Spotlight on target element */}
@@ -244,9 +236,9 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         />
       )}
 
-      {/* Tooltip - high z-index ensures buttons are clickable */}
+      {/* Tooltip - pointer-events:auto ensures buttons receive clicks */}
       <div
-        className="absolute w-[calc(100vw-32px)] sm:w-[360px] max-w-[360px] p-4 sm:p-6 rounded-lg mx-4 sm:mx-0 z-[101]"
+        className="absolute w-[calc(100vw-32px)] sm:w-[360px] max-w-[360px] p-4 sm:p-6 rounded-lg mx-4 sm:mx-0 z-[101] pointer-events-auto"
         style={{
           ...getTooltipPosition(),
           background: 'linear-gradient(135deg, rgba(20, 24, 59, 0.98) 0%, rgba(10, 14, 39, 0.98) 100%)',
