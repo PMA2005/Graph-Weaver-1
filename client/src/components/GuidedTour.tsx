@@ -41,7 +41,7 @@ const tourSteps: TourStep[] = [
     title: 'Layout Controls',
     description: 'Switch between Force (dynamic) and Spiral (organized) layouts. Filter by node type using the People/Projects buttons at the bottom.',
     targetSelector: '[data-testid="graph-legend"]',
-    position: 'top',
+    position: 'center',
     icon: <Eye className="w-6 h-6" />,
   },
   {
@@ -49,7 +49,7 @@ const tourSteps: TourStep[] = [
     title: 'Pan & Zoom',
     description: 'Scroll to zoom in/out. Click and drag the background to pan. Use the +/- buttons for precise control.',
     targetSelector: '[data-testid="zoom-controls"]',
-    position: 'left',
+    position: 'center',
     icon: <ZoomIn className="w-6 h-6" />,
   },
   {
@@ -135,21 +135,26 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
   // Navigation handlers - bounds checking inside state updater for race safety
   const goNext = useCallback(() => {
+    console.log('[Tour] goNext called, current step:', currentStep);
     setCurrentStep(prev => {
+      console.log('[Tour] setCurrentStep prev:', prev, 'total steps:', tourSteps.length);
       const nextStep = prev + 1;
       if (prev === tourSteps.length - 1) {
-        // Final step - complete the tour
+        console.log('[Tour] Final step reached, completing tour');
         setTimeout(() => onComplete(), 0);
         return prev;
       }
       if (nextStep < tourSteps.length) {
+        console.log('[Tour] Moving to step:', nextStep);
         return nextStep;
       }
+      console.log('[Tour] No change, staying at:', prev);
       return prev;
     });
-  }, [onComplete]);
+  }, [onComplete, currentStep]);
 
   const goPrev = useCallback(() => {
+    console.log('[Tour] goPrev called');
     setCurrentStep(prev => {
       if (prev > 0) {
         return prev - 1;
@@ -159,6 +164,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
   }, []);
 
   const skipTour = useCallback(() => {
+    console.log('[Tour] skipTour called');
     onClose();
   }, [onClose]);
 
