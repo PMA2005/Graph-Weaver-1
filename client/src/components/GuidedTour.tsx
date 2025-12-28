@@ -171,7 +171,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
       <div 
         className="absolute inset-0"
         style={{
-          background: 'rgba(0, 0, 0, 0.85)',
+          background: 'rgba(0, 0, 0, 0.60)',
         }}
         onClick={handleSkip}
       />
@@ -186,7 +186,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
             width: targetRect.width + 16,
             height: targetRect.height + 16,
             borderRadius: '8px',
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 255, 255, 0.5)',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.60), 0 0 30px rgba(0, 255, 255, 0.5)',
             border: '2px solid rgba(0, 255, 255, 0.6)',
           }}
         />
@@ -278,7 +278,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
               className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
               data-testid="button-tour-next"
             >
-              {isLastStep ? 'Get Started' : 'Next'}
+              {isLastStep ? 'Finish Tour' : 'Next'}
               {!isLastStep && <ChevronRight className="w-4 h-4 ml-1" />}
             </Button>
           </div>
