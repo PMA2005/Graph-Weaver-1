@@ -278,9 +278,10 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Stratified spiral layout: projects at top-center in curved rows, persons in triangular arc below
+// Radial hub-and-spoke layout: projects as central hubs, people grouped around their connected projects
 function useSpiralLayout(
   nodes: GraphNode[],
+  edges: GraphEdge[],
   width: number,
   height: number
 ): Record<string, [number, number]> {
@@ -302,62 +303,146 @@ function useSpiralLayout(
 
     const result: Record<string, [number, number]> = {};
 
-    // Projects: curved rows at top-center
-    const projectSpacing = 90;
-    const rowHeight = 70;
-    const maxRowWidth = width * 0.7;
-    const projectsPerRow = Math.max(1, Math.floor(maxRowWidth / projectSpacing));
+    // Build connection map: which people connect to which projects
+    const personToProjects: Record<string, string[]> = {};
+    const projectToPersons: Record<string, string[]> = {};
     
-    projects.forEach((node, i) => {
-      const row = Math.floor(i / projectsPerRow);
-      const col = i % projectsPerRow;
-      const rowCount = Math.min(projectsPerRow, projects.length - row * projectsPerRow);
-      const rowStartX = centerX - ((rowCount - 1) * projectSpacing) / 2;
+    edges.forEach(edge => {
+      const sourceNode = nodes.find(n => n.node_id === edge.source_node);
+      const targetNode = nodes.find(n => n.node_id === edge.target_node);
+      if (!sourceNode || !targetNode) return;
       
-      // Add slight wave curve to each row
-      const waveOffset = Math.sin((col / (rowCount - 1 || 1)) * Math.PI) * 15;
+      const sourceType = sourceNode.node_type.toLowerCase();
+      const targetType = targetNode.node_type.toLowerCase();
       
-      const x = rowStartX + col * projectSpacing;
-      const y = centerY - availableHeight * 0.25 + row * rowHeight + waveOffset;
-      
-      result[node.node_id] = [x, y];
+      if (sourceType === 'person' && targetType === 'project') {
+        if (!personToProjects[edge.source_node]) personToProjects[edge.source_node] = [];
+        if (!personToProjects[edge.source_node].includes(edge.target_node)) {
+          personToProjects[edge.source_node].push(edge.target_node);
+        }
+        if (!projectToPersons[edge.target_node]) projectToPersons[edge.target_node] = [];
+        if (!projectToPersons[edge.target_node].includes(edge.source_node)) {
+          projectToPersons[edge.target_node].push(edge.source_node);
+        }
+      } else if (sourceType === 'project' && targetType === 'person') {
+        if (!personToProjects[edge.target_node]) personToProjects[edge.target_node] = [];
+        if (!personToProjects[edge.target_node].includes(edge.source_node)) {
+          personToProjects[edge.target_node].push(edge.source_node);
+        }
+        if (!projectToPersons[edge.source_node]) projectToPersons[edge.source_node] = [];
+        if (!projectToPersons[edge.source_node].includes(edge.target_node)) {
+          projectToPersons[edge.source_node].push(edge.target_node);
+        }
+      }
     });
 
-    // Persons: triangular arc pattern at bottom/outer
-    const personCount = persons.length;
-    if (personCount > 0) {
-      // Create arc from bottom-left to bottom-right, curving upward at edges
-      const arcWidth = width * 0.8;
-      const arcHeight = availableHeight * 0.45;
-      const startY = centerY + availableHeight * 0.1;
+    // Calculate radii based on available space
+    const maxRadius = Math.min(width, availableHeight) * 0.42;
+    const projectRadius = maxRadius * 0.4; // Inner ring for projects
+    const personInnerRadius = maxRadius * 0.65; // Start of person rings
+    const personOuterRadius = maxRadius * 1.0; // End of person rings
+
+    // Group persons by their primary project connection
+    const projectGroups: Record<string, GraphNode[]> = {};
+    const unconnectedPersons: GraphNode[] = [];
+    
+    projects.forEach(p => {
+      projectGroups[p.node_id] = [];
+    });
+
+    persons.forEach(person => {
+      const connectedProjects = personToProjects[person.node_id] || [];
+      if (connectedProjects.length > 0) {
+        // Assign to first connected project for grouping
+        const primaryProject = connectedProjects[0];
+        if (projectGroups[primaryProject]) {
+          projectGroups[primaryProject].push(person);
+        } else {
+          unconnectedPersons.push(person);
+        }
+      } else {
+        unconnectedPersons.push(person);
+      }
+    });
+
+    // Calculate how much angular space each project needs based on connected people
+    // Minimum wedge size for projects with no connections
+    const minWedgeSize = 0.15; // radians
+    const projectCount = projects.length;
+    const totalConnected = persons.length - unconnectedPersons.length;
+    
+    // Calculate weighted angular sizes for each project
+    const projectWeights: number[] = projects.map(p => {
+      const connectedCount = projectGroups[p.node_id].length;
+      return Math.max(connectedCount, 1); // At least 1 for empty projects
+    });
+    const totalWeight = projectWeights.reduce((a, b) => a + b, 0) + (unconnectedPersons.length > 0 ? unconnectedPersons.length : 0);
+    
+    // Place projects and their connected people around the circle
+    let currentAngle = -Math.PI / 2; // Start from top
+    
+    projects.forEach((project, projectIndex) => {
+      const projectPersons = projectGroups[project.node_id];
+      const weight = projectWeights[projectIndex];
       
-      // Distribute persons in multiple arcs
-      const nodesPerArc = Math.ceil(Math.sqrt(personCount) * 2);
+      // Angular size for this project's wedge
+      const wedgeSize = (2 * Math.PI * weight) / totalWeight;
       
-      persons.forEach((node, i) => {
-        const arcIndex = Math.floor(i / nodesPerArc);
-        const posInArc = i % nodesPerArc;
-        const nodesInThisArc = Math.min(nodesPerArc, personCount - arcIndex * nodesPerArc);
+      // Project sits at the center of its wedge
+      const projectAngle = currentAngle + wedgeSize / 2;
+      const projectX = centerX + Math.cos(projectAngle) * projectRadius;
+      const projectY = centerY + Math.sin(projectAngle) * projectRadius;
+      result[project.node_id] = [projectX, projectY];
+      
+      // Place connected people in an arc around the project's angle
+      if (projectPersons.length > 0) {
+        const personWedge = wedgeSize * 0.85; // Use 85% of wedge for people
+        const startPersonAngle = projectAngle - personWedge / 2;
         
-        // Progress along arc (0 to 1)
-        const t = nodesInThisArc > 1 ? posInArc / (nodesInThisArc - 1) : 0.5;
+        projectPersons.forEach((person, personIndex) => {
+          const personCount = projectPersons.length;
+          // Spread evenly within the wedge
+          const angleOffset = personCount > 1
+            ? (personIndex / (personCount - 1)) * personWedge
+            : 0;
+          const angle = startPersonAngle + angleOffset;
+          
+          // Vary radius for visual interest - create multiple rings
+          const ringIndex = personIndex % 3;
+          const radiusT = 0.2 + ringIndex * 0.35; // 0.2, 0.55, 0.9
+          const radius = personInnerRadius + (personOuterRadius - personInnerRadius) * radiusT;
+          
+          const x = centerX + Math.cos(angle) * radius;
+          const y = centerY + Math.sin(angle) * radius;
+          result[person.node_id] = [x, y];
+        });
+      }
+      
+      currentAngle += wedgeSize;
+    });
+
+    // Place unconnected persons in remaining space
+    if (unconnectedPersons.length > 0) {
+      const unconnectedWedge = (2 * Math.PI * unconnectedPersons.length) / totalWeight;
+      const startAngle = currentAngle;
+      
+      unconnectedPersons.forEach((person, i) => {
+        const angleOffset = unconnectedPersons.length > 1
+          ? (i / (unconnectedPersons.length - 1)) * unconnectedWedge * 0.85 + unconnectedWedge * 0.075
+          : unconnectedWedge * 0.5;
+        const angle = startAngle + angleOffset;
+        const ringIndex = i % 3;
+        const radiusT = 0.2 + ringIndex * 0.35;
+        const radius = personInnerRadius + (personOuterRadius - personInnerRadius) * radiusT;
         
-        // Arc curves down at center, up at edges (inverted parabola)
-        const arcRadius = 0.6 + arcIndex * 0.25;
-        const xSpread = arcWidth * arcRadius * 0.5;
-        const x = centerX + (t - 0.5) * 2 * xSpread;
-        
-        // Parabolic curve: higher at edges, lower at center
-        const curveDepth = arcHeight * (0.3 + arcIndex * 0.15);
-        const parabola = 4 * (t - 0.5) * (t - 0.5); // 0 at center, 1 at edges
-        const y = startY + curveDepth * (1 - parabola) + arcIndex * 60;
-        
-        result[node.node_id] = [x, y];
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        result[person.node_id] = [x, y];
       });
     }
 
     return result;
-  }, [nodes, width, height]);
+  }, [nodes, edges, width, height]);
 
   // Animation loop for floating effect
   useEffect(() => {
@@ -463,7 +548,7 @@ export default function Graph2DCanvas({
   }, [edges, selectedNodeIds]);
 
   const forcePositions = useForceSimulation2D(displayNodes, displayEdges, layoutMode === 'force', dimensions.width, dimensions.height);
-  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height);
+  const spiralPositions = useSpiralLayout(displayNodes, displayEdges, dimensions.width, dimensions.height);
   const positions = layoutMode === 'force' ? forcePositions : spiralPositions;
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
