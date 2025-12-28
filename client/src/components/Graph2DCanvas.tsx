@@ -278,7 +278,7 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Elliptical ring layout: projects and people share one large oval band, grouped by connections
+// Hub layout: projects form inner cluster, people form outer elliptical ring
 function useSpiralLayout(
   nodes: GraphNode[],
   edges: GraphEdge[],
@@ -336,10 +336,12 @@ function useSpiralLayout(
       }
     });
 
-    // Ellipse radii - wide oval shape
-    const radiusX = width * 0.42;  // Horizontal radius
-    const radiusY = availableHeight * 0.38;  // Vertical radius (slightly smaller for oval)
-    const bandThickness = 35; // Radial jitter for ring thickness
+    // Radii for inner projects and outer people ring
+    const outerRadiusX = width * 0.42;  // Outer ring for people
+    const outerRadiusY = availableHeight * 0.40;
+    const innerRadiusX = width * 0.18;  // Inner ellipse for projects
+    const innerRadiusY = availableHeight * 0.15;
+    const bandThickness = 30; // Radial jitter for ring thickness
 
     // Group persons by their primary project connection
     const projectGroups: Record<string, GraphNode[]> = {};
@@ -363,86 +365,88 @@ function useSpiralLayout(
       }
     });
 
-    // Calculate total nodes to place (projects + their people as groups)
-    // Each project group = 1 project + N people, placed together on the ring
-    const totalSlots = nodes.length; // Total nodes to distribute
-    
-    // Calculate weighted angular spans - projects with more people get more space
-    const groupSizes: { projectId: string; size: number }[] = projects.map(p => ({
-      projectId: p.node_id,
-      size: 1 + projectGroups[p.node_id].length // Project itself + connected people
-    }));
-    const unconnectedSize = unconnectedPersons.length;
-    const totalSize = groupSizes.reduce((a, g) => a + g.size, 0) + unconnectedSize;
-
     // Seeded random for consistent jitter
     const seededRandom = (seed: number) => {
       const x = Math.sin(seed * 12.9898) * 43758.5453;
       return x - Math.floor(x);
     };
 
-    let currentAngle = -Math.PI / 2; // Start from top
-
-    // Place each project group along the ellipse
+    // Place projects in inner ellipse, evenly distributed
     projects.forEach((project, projectIndex) => {
-      const projectPersons = projectGroups[project.node_id];
-      const groupSize = 1 + projectPersons.length;
-      const angularSpan = (2 * Math.PI * groupSize) / totalSize;
+      const angle = -Math.PI / 2 + (projectIndex / projects.length) * 2 * Math.PI;
       
-      // Project goes at the start/center of its group's span
-      const projectAngle = currentAngle + angularSpan * 0.15; // Slight offset from start
+      // Add slight jitter for natural look
+      const jitterSeed = projectIndex * 7;
+      const radialJitter = (seededRandom(jitterSeed) - 0.5) * 15;
       
-      // Calculate position on ellipse with slight inward offset for projects
-      const projRadiusX = radiusX * 0.92;
-      const projRadiusY = radiusY * 0.92;
-      const projectX = centerX + Math.cos(projectAngle) * projRadiusX;
-      const projectY = centerY + Math.sin(projectAngle) * projRadiusY;
+      const projRadiusX = innerRadiusX + radialJitter;
+      const projRadiusY = innerRadiusY + radialJitter * 0.7;
+      
+      const projectX = centerX + Math.cos(angle) * projRadiusX;
+      const projectY = centerY + Math.sin(angle) * projRadiusY;
       result[project.node_id] = [projectX, projectY];
-      
-      // Place connected people spread out after the project in the same span
-      if (projectPersons.length > 0) {
-        const personStartAngle = currentAngle + angularSpan * 0.25;
-        const personAngularRange = angularSpan * 0.7;
-        
-        projectPersons.forEach((person, personIndex) => {
-          const personCount = projectPersons.length;
-          // Distribute evenly across the angular range
-          const t = personCount > 1 ? personIndex / (personCount - 1) : 0.5;
-          const angle = personStartAngle + t * personAngularRange;
-          
-          // Add radial jitter based on person index for ring thickness
-          const jitterSeed = personIndex + projectIndex * 100;
-          const radialJitter = (seededRandom(jitterSeed) - 0.5) * bandThickness * 2;
-          
-          // Alternate between inner and outer positions for variety
-          const depthOffset = (personIndex % 3 - 1) * bandThickness * 0.6;
-          
-          const personRadiusX = radiusX + radialJitter + depthOffset;
-          const personRadiusY = radiusY + radialJitter + depthOffset;
-          
-          const x = centerX + Math.cos(angle) * personRadiusX;
-          const y = centerY + Math.sin(angle) * personRadiusY;
-          result[person.node_id] = [x, y];
-        });
-      }
-      
-      currentAngle += angularSpan;
     });
 
-    // Place unconnected persons in remaining space
-    if (unconnectedPersons.length > 0) {
-      const angularSpan = (2 * Math.PI * unconnectedSize) / totalSize;
+    // Calculate project angles for positioning connected people nearby
+    const projectAngles: Record<string, number> = {};
+    projects.forEach((project, projectIndex) => {
+      projectAngles[project.node_id] = -Math.PI / 2 + (projectIndex / projects.length) * 2 * Math.PI;
+    });
+
+    // Calculate weighted angular spans for people on outer ring
+    // Projects with more connected people get more angular space
+    const totalConnectedPersons = persons.length - unconnectedPersons.length;
+    const connectedPersonsList: { person: GraphNode; projectAngle: number; projectIndex: number }[] = [];
+    
+    projects.forEach((project, projectIndex) => {
+      const projectPersons = projectGroups[project.node_id];
+      const projectAngle = projectAngles[project.node_id];
+      projectPersons.forEach(person => {
+        connectedPersonsList.push({ person, projectAngle, projectIndex });
+      });
+    });
+
+    // Sort connected persons by their project's angle for smooth distribution
+    connectedPersonsList.sort((a, b) => a.projectAngle - b.projectAngle);
+
+    // Place connected people on outer ring, clustered near their project's angle
+    connectedPersonsList.forEach((item, index) => {
+      const { person, projectAngle, projectIndex } = item;
+      const projectPersons = projectGroups[projects[projectIndex].node_id];
+      const personIndexInGroup = projectPersons.indexOf(person);
+      const groupSize = projectPersons.length;
       
+      // Spread people around their project's angle
+      const spreadAngle = Math.min(0.5, groupSize * 0.08); // Max spread based on group size
+      const offsetT = groupSize > 1 ? (personIndexInGroup / (groupSize - 1) - 0.5) : 0;
+      const angle = projectAngle + offsetT * spreadAngle;
+      
+      // Add radial jitter for ring thickness
+      const jitterSeed = personIndexInGroup + projectIndex * 100;
+      const radialJitter = (seededRandom(jitterSeed) - 0.5) * bandThickness * 2;
+      const depthOffset = (personIndexInGroup % 3 - 1) * bandThickness * 0.5;
+      
+      const personRadiusX = outerRadiusX + radialJitter + depthOffset;
+      const personRadiusY = outerRadiusY + radialJitter + depthOffset;
+      
+      const x = centerX + Math.cos(angle) * personRadiusX;
+      const y = centerY + Math.sin(angle) * personRadiusY;
+      result[person.node_id] = [x, y];
+    });
+
+    // Place unconnected persons evenly on outer ring in remaining space
+    if (unconnectedPersons.length > 0) {
+      // Find gaps between project clusters and place unconnected people there
       unconnectedPersons.forEach((person, i) => {
-        const t = unconnectedPersons.length > 1 ? i / (unconnectedPersons.length - 1) : 0.5;
-        const angle = currentAngle + t * angularSpan * 0.9 + angularSpan * 0.05;
+        // Distribute evenly around the ring, offset from connected people
+        const angle = -Math.PI / 2 + ((i + 0.5) / unconnectedPersons.length) * 2 * Math.PI;
         
         const jitterSeed = i + 9999;
         const radialJitter = (seededRandom(jitterSeed) - 0.5) * bandThickness * 2;
-        const depthOffset = (i % 3 - 1) * bandThickness * 0.6;
+        const depthOffset = (i % 3 - 1) * bandThickness * 0.5;
         
-        const personRadiusX = radiusX + radialJitter + depthOffset;
-        const personRadiusY = radiusY + radialJitter + depthOffset;
+        const personRadiusX = outerRadiusX + radialJitter + depthOffset;
+        const personRadiusY = outerRadiusY + radialJitter + depthOffset;
         
         const x = centerX + Math.cos(angle) * personRadiusX;
         const y = centerY + Math.sin(angle) * personRadiusY;
