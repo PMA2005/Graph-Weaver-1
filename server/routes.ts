@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNodeSchema, insertEdgeSchema, graphDataSchema, updateNodeSchema } from "@shared/schema";
+import { insertNodeSchema, insertEdgeSchema, graphDataSchema, updateNodeSchema, createSnapshotSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -179,10 +179,14 @@ export async function registerRoutes(
 
   app.post("/api/snapshots", (req, res) => {
     try {
-      const { name, description } = req.body;
-      if (!name || typeof name !== 'string') {
-        return res.status(400).json({ error: "Snapshot name is required" });
+      const parsed = createSnapshotSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid snapshot data", 
+          details: parsed.error.errors 
+        });
       }
+      const { name, description } = parsed.data;
       const snapshot = storage.createSnapshot(name, description);
       res.status(201).json(snapshot);
     } catch (error) {
@@ -205,8 +209,12 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Error restoring snapshot:", error);
-      if ((error as Error).message === 'Snapshot not found') {
+      const errorMessage = (error as Error).message;
+      if (errorMessage === 'Snapshot not found') {
         return res.status(404).json({ error: "Snapshot not found" });
+      }
+      if (errorMessage === 'Snapshot contains invalid data and cannot be restored') {
+        return res.status(422).json({ error: errorMessage });
       }
       res.status(500).json({ error: "Failed to restore snapshot" });
     }

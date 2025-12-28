@@ -360,8 +360,15 @@ export class SQLiteStorage implements IStorage {
       throw new Error('Snapshot not found');
     }
     
-    const nodes = JSON.parse(snapshot.nodes_json) as GraphNode[];
-    const edges = JSON.parse(snapshot.edges_json) as GraphEdge[];
+    let nodes: GraphNode[];
+    let edges: GraphEdge[];
+    
+    try {
+      nodes = JSON.parse(snapshot.nodes_json) as GraphNode[];
+      edges = JSON.parse(snapshot.edges_json) as GraphEdge[];
+    } catch (parseError) {
+      throw new Error('Snapshot contains invalid data and cannot be restored');
+    }
     
     const transaction = this.db.transaction(() => {
       this.db.exec('DELETE FROM edges');
