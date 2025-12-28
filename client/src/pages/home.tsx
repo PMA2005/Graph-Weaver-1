@@ -94,6 +94,17 @@ export default function Home() {
     }
   }, []);
 
+  // Escape key to exit focused view
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && viewMode === 'focused') {
+        clearSelection();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, clearSelection]);
+
   const handleTourComplete = useCallback(() => {
     localStorage.setItem('graphTourCompleted', 'true');
     setShowTour(false);
