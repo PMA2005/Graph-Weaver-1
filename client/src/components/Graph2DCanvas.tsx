@@ -30,6 +30,7 @@ interface Graph2DCanvasProps {
   focusedEdges: GraphEdge[];
   onResetView: () => void;
   svgRef?: React.RefObject<SVGSVGElement>;
+  onEdgeClick?: (edge: GraphEdge) => void;
 }
 
 const NODE_TYPE_COLORS: Record<string, string> = {
@@ -466,6 +467,7 @@ export default function Graph2DCanvas({
   focusedEdges = [],
   onResetView,
   svgRef,
+  onEdgeClick,
 }: Graph2DCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -714,27 +716,43 @@ export default function Graph2DCanvas({
             const isHighlighted = selectedNodeIds.has(edge.source_node) || selectedNodeIds.has(edge.target_node);
             const isFaded = isFocusMode && !focusedNodeIds.has(edge.source_node) && !focusedNodeIds.has(edge.target_node);
             const edgeColor = getEdgeColor(edge.relationship_type);
-
-            const midX = (sourcePos[0] + targetPos[0]) / 2;
-            const midY = (sourcePos[1] + targetPos[1]) / 2;
+            const isClickable = isFocusMode && onEdgeClick;
 
             const filterType = RELATIONSHIP_COLORS[edge.relationship_type] ? edge.relationship_type : 'default';
 
             return (
-              <line
-                key={`edge-${idx}`}
-                x1={sourcePos[0]}
-                y1={sourcePos[1]}
-                x2={targetPos[0]}
-                y2={targetPos[1]}
-                stroke={edgeColor}
-                strokeWidth={(isHighlighted ? 4 : 2.5) / Math.min(Math.max(transform.scale, 0.3), 4)}
-                strokeOpacity={isFaded ? 0.2 : isHighlighted ? 1 : 0.75}
-                filter={`url(#edge-glow-${filterType})`}
-                style={{
-                  transition: 'stroke-opacity 0.4s ease-out, stroke-width 0.3s ease-out'
-                }}
-              />
+              <g key={`edge-${idx}`}>
+                {isClickable && (
+                  <line
+                    x1={sourcePos[0]}
+                    y1={sourcePos[1]}
+                    x2={targetPos[0]}
+                    y2={targetPos[1]}
+                    stroke="transparent"
+                    strokeWidth={20 / Math.min(Math.max(transform.scale, 0.3), 4)}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdgeClick(edge);
+                    }}
+                    data-testid={`edge-${edge.source_node}-${edge.target_node}`}
+                  />
+                )}
+                <line
+                  x1={sourcePos[0]}
+                  y1={sourcePos[1]}
+                  x2={targetPos[0]}
+                  y2={targetPos[1]}
+                  stroke={edgeColor}
+                  strokeWidth={(isHighlighted ? 4 : 2.5) / Math.min(Math.max(transform.scale, 0.3), 4)}
+                  strokeOpacity={isFaded ? 0.2 : isHighlighted ? 1 : 0.75}
+                  filter={`url(#edge-glow-${filterType})`}
+                  style={{
+                    transition: 'stroke-opacity 0.4s ease-out, stroke-width 0.3s ease-out',
+                    pointerEvents: isClickable ? 'none' : 'auto'
+                  }}
+                />
+              </g>
             );
           })}
 

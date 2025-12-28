@@ -16,6 +16,7 @@ import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import FocusOverlay from '@/components/FocusOverlay';
 import HistoryModal from '@/components/HistoryModal';
 import ShareModal from '@/components/ShareModal';
+import EdgeEditDialog from '@/components/EdgeEditDialog';
 import { useToast } from '@/hooks/use-toast';
 import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
@@ -33,6 +34,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
+  const [edgeToEdit, setEdgeToEdit] = useState<GraphEdge | null>(null);
   const [graphKey, setGraphKey] = useState(0);
   const svgRef = useRef<SVGSVGElement>(null);
   const { toast } = useToast();
@@ -186,6 +188,42 @@ export default function Home() {
       toast({ title: 'Error', description: 'Failed to remove relationship', variant: 'destructive' });
     },
   });
+
+  const updateEdgeMutation = useMutation({
+    mutationFn: async ({ source_node, target_node, relationship_type, new_relationship_type }: { 
+      source_node: string; 
+      target_node: string; 
+      relationship_type: string;
+      new_relationship_type: string;
+    }) => {
+      return apiRequest(
+        'PATCH', 
+        `/api/edges?source_node=${encodeURIComponent(source_node)}&target_node=${encodeURIComponent(target_node)}&relationship_type=${encodeURIComponent(relationship_type)}`,
+        { new_relationship_type }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/graph'] });
+      setEdgeToEdit(null);
+      toast({ title: 'Success', description: 'Relationship type updated successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update relationship', variant: 'destructive' });
+    },
+  });
+
+  const handleEdgeClick = useCallback((edge: GraphEdge) => {
+    setEdgeToEdit(edge);
+  }, []);
+
+  const handleEdgeSave = useCallback((edge: GraphEdge, newRelationshipType: string) => {
+    updateEdgeMutation.mutate({
+      source_node: edge.source_node,
+      target_node: edge.target_node,
+      relationship_type: edge.relationship_type,
+      new_relationship_type: newRelationshipType,
+    });
+  }, [updateEdgeMutation]);
 
   const nodes: GraphNode[] = graphData?.nodes || [];
   const edges: GraphEdge[] = graphData?.edges || [];
@@ -385,6 +423,7 @@ export default function Home() {
               focusedEdges={focusedSubgraph.edges}
               onResetView={handleResetView}
               svgRef={svgRef}
+              onEdgeClick={handleEdgeClick}
             />
           )}
         </div>
@@ -502,6 +541,15 @@ export default function Home() {
           svgRef={svgRef}
         />
       )}
+
+      <EdgeEditDialog
+        edge={edgeToEdit}
+        nodes={nodes}
+        isOpen={!!edgeToEdit}
+        onClose={() => setEdgeToEdit(null)}
+        onSave={handleEdgeSave}
+        isPending={updateEdgeMutation.isPending}
+      />
     </div>
   );
 }

@@ -29,6 +29,12 @@ export const updateNodeSchema = z.object({
   message: "At least one field must be provided for update"
 });
 
+// Edge update schema - allows updating relationship_type and weight
+export const updateEdgeSchema = z.object({
+  new_relationship_type: z.string().min(1, "Relationship type is required"),
+  weight: z.number().optional(),
+});
+
 export type GraphNode = z.infer<typeof graphNodeSchema>;
 export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 export type InsertNode = z.infer<typeof insertNodeSchema>;

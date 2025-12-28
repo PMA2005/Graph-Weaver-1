@@ -34,6 +34,7 @@ export interface IStorage {
   updateNode(nodeId: string, node: Partial<InsertNode>): GraphNode | undefined;
   deleteNode(nodeId: string): boolean;
   createEdge(edge: InsertEdge): GraphEdge;
+  updateEdge(sourceNode: string, targetNode: string, oldRelationshipType: string, newRelationshipType: string, weight?: number): GraphEdge | undefined;
   deleteEdge(sourceNode: string, targetNode: string, relationshipType?: string): boolean;
   importGraphData(data: GraphData): { nodesImported: number; edgesImported: number };
   createSnapshot(name: string, description?: string): SnapshotInfo;
@@ -254,6 +255,41 @@ export class SQLiteStorage implements IStorage {
       const result = stmt.run(sourceNode, targetNode);
       return result.changes > 0;
     }
+  }
+
+  updateEdge(sourceNode: string, targetNode: string, oldRelationshipType: string, newRelationshipType: string, weight?: number): GraphEdge | undefined {
+    // Check if the edge exists
+    const checkStmt = this.db.prepare(
+      'SELECT * FROM edges WHERE source_node = ? AND target_node = ? AND relationship_type = ?'
+    );
+    const existing = checkStmt.get(sourceNode, targetNode, oldRelationshipType) as GraphEdge | undefined;
+    
+    if (!existing) return undefined;
+    
+    const timestamp = new Date().toISOString();
+    
+    // Since relationship_type is part of the primary key, we need to delete and re-insert
+    const transaction = this.db.transaction(() => {
+      // Delete old edge
+      this.db.prepare(
+        'DELETE FROM edges WHERE source_node = ? AND target_node = ? AND relationship_type = ?'
+      ).run(sourceNode, targetNode, oldRelationshipType);
+      
+      // Insert new edge with updated relationship type
+      this.db.prepare(
+        'INSERT INTO edges (source_node, target_node, relationship_type, weight, timestamp) VALUES (?, ?, ?, ?, ?)'
+      ).run(sourceNode, targetNode, newRelationshipType, weight ?? existing.weight ?? 1, timestamp);
+    });
+    
+    transaction();
+    
+    return {
+      source_node: sourceNode,
+      target_node: targetNode,
+      relationship_type: newRelationshipType,
+      weight: weight ?? existing.weight ?? 1,
+      timestamp
+    };
   }
 
   importGraphData(data: GraphData): { nodesImported: number; edgesImported: number } {

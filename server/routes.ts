@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNodeSchema, insertEdgeSchema, graphDataSchema, updateNodeSchema, createSnapshotSchema } from "@shared/schema";
+import { insertNodeSchema, insertEdgeSchema, graphDataSchema, updateNodeSchema, updateEdgeSchema, createSnapshotSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -116,6 +116,39 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error creating edge:", error);
       res.status(500).json({ error: "Failed to create edge" });
+    }
+  });
+
+  app.patch("/api/edges", (req, res) => {
+    try {
+      const { source_node, target_node, relationship_type } = req.query;
+      if (!source_node || !target_node || !relationship_type) {
+        return res.status(400).json({ error: "source_node, target_node, and relationship_type are required" });
+      }
+      
+      const parsed = updateEdgeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid update data", 
+          details: parsed.error.errors 
+        });
+      }
+      
+      const edge = storage.updateEdge(
+        source_node as string,
+        target_node as string,
+        relationship_type as string,
+        parsed.data.new_relationship_type,
+        parsed.data.weight
+      );
+      
+      if (!edge) {
+        return res.status(404).json({ error: "Edge not found" });
+      }
+      res.json(edge);
+    } catch (error) {
+      console.error("Error updating edge:", error);
+      res.status(500).json({ error: "Failed to update edge" });
     }
   });
 
