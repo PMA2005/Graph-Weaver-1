@@ -235,58 +235,95 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Spiral layout with golden angle distribution
+// Spiral layout with golden angle distribution and floating animation
 function useSpiralLayout(
   nodes: GraphNode[],
   width: number,
-  height: number
+  height: number,
+  isActive: boolean
 ): Record<string, [number, number]> {
-  return useMemo(() => {
-    if (nodes.length === 0 || width === 0 || height === 0) return {};
+  const [positions, setPositions] = useState<Record<string, [number, number]>>({});
+  const basePositionsRef = useRef<Record<string, [number, number]>>({});
+  const animationRef = useRef<number | null>(null);
+  const timeRef = useRef(0);
+
+  // Calculate base spiral positions
+  useEffect(() => {
+    if (nodes.length === 0 || width === 0 || height === 0 || !isActive) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+      return;
+    }
 
     const legendHeight = 80;
     const availableHeight = height - legendHeight;
     const centerX = width / 2;
     const centerY = availableHeight / 2;
 
-    // Separate by type - projects inner, persons outer
+    // Separate by type - projects at top, persons at bottom (like force graph)
     const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
     const persons = nodes.filter(n => n.node_type.toLowerCase() === 'person');
 
-    const positions: Record<string, [number, number]> = {};
+    const basePos: Record<string, [number, number]> = {};
     const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
 
-    // Calculate spiral positions for a group
-    const placeInSpiral = (
-      nodeList: GraphNode[],
-      baseRadius: number,
-      spacing: number
-    ) => {
-      nodeList.forEach((node, i) => {
-        const angle = i * goldenAngle;
-        const radius = baseRadius + spacing * Math.sqrt(i);
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
-        positions[node.node_id] = [x, y];
-      });
+    // Projects spiral at top of screen
+    const projectCenterY = centerY - availableHeight * 0.25;
+    projects.forEach((node, i) => {
+      const angle = i * goldenAngle;
+      const radius = 50 + 30 * Math.sqrt(i);
+      const x = centerX + Math.cos(angle) * radius;
+      const y = projectCenterY + Math.sin(angle) * radius * 0.6; // Flatten vertically
+      basePos[node.node_id] = [x, y];
+    });
+
+    // Persons spiral at bottom of screen
+    const personCenterY = centerY + availableHeight * 0.2;
+    persons.forEach((node, i) => {
+      const angle = i * goldenAngle + Math.PI; // Offset angle
+      const radius = 80 + 35 * Math.sqrt(i);
+      const x = centerX + Math.cos(angle) * radius;
+      const y = personCenterY + Math.sin(angle) * radius * 0.5; // Flatten vertically
+      basePos[node.node_id] = [x, y];
+    });
+
+    basePositionsRef.current = basePos;
+
+    // Animate with gentle floating motion
+    const animate = () => {
+      timeRef.current += 0.015;
+      const t = timeRef.current;
+
+      const animatedPos: Record<string, [number, number]> = {};
+      let i = 0;
+      for (const nodeId in basePos) {
+        const [baseX, baseY] = basePos[nodeId];
+        const phase = i * 0.7; // Unique phase per node
+        // Gentle orbital drift
+        const driftX = Math.sin(t + phase) * 8 + Math.cos(t * 0.7 + phase * 1.3) * 5;
+        const driftY = Math.cos(t * 0.8 + phase) * 6 + Math.sin(t * 0.5 + phase * 0.9) * 4;
+        animatedPos[nodeId] = [baseX + driftX, baseY + driftY];
+        i++;
+      }
+
+      setPositions(animatedPos);
+      animationRef.current = requestAnimationFrame(animate);
     };
 
-    // Projects in inner spiral (smaller radius)
-    const innerBaseRadius = 60;
-    const innerSpacing = 35;
-    placeInSpiral(projects, innerBaseRadius, innerSpacing);
+    // Start animation
+    animate();
 
-    // Calculate outer spiral start to not overlap
-    const maxProjectRadius = projects.length > 0 
-      ? innerBaseRadius + innerSpacing * Math.sqrt(projects.length - 1) + 80
-      : 60;
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [nodes, width, height, isActive]);
 
-    // Persons in outer spiral
-    const outerSpacing = 40;
-    placeInSpiral(persons, maxProjectRadius, outerSpacing);
-
-    return positions;
-  }, [nodes, width, height]);
+  return positions;
 }
 
 export default function Graph2DCanvas({
@@ -345,7 +382,7 @@ export default function Graph2DCanvas({
   }, [edges, selectedNodeIds]);
 
   const forcePositions = useForceSimulation2D(displayNodes, displayEdges, layoutMode === 'force', dimensions.width, dimensions.height);
-  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height);
+  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height, layoutMode === 'spiral');
   const positions = layoutMode === 'force' ? forcePositions : spiralPositions;
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
