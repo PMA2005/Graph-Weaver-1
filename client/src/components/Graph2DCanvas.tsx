@@ -235,138 +235,58 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Organized layout: Projects in grid rows at top, Persons in pyramid at bottom
+// Spiral layout with golden angle distribution
 function useSpiralLayout(
   nodes: GraphNode[],
   width: number,
-  height: number,
-  isActive: boolean
+  height: number
 ): Record<string, [number, number]> {
-  const [positions, setPositions] = useState<Record<string, [number, number]>>({});
-  const basePositionsRef = useRef<Record<string, [number, number]>>({});
-  const animationRef = useRef<number | null>(null);
-  const timeRef = useRef(0);
-
-  useEffect(() => {
-    if (nodes.length === 0 || width === 0 || height === 0 || !isActive) {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-      return;
-    }
+  return useMemo(() => {
+    if (nodes.length === 0 || width === 0 || height === 0) return {};
 
     const legendHeight = 80;
-    const headerHeight = 80;
-    const availableHeight = height - legendHeight - headerHeight;
+    const availableHeight = height - legendHeight;
     const centerX = width / 2;
+    const centerY = availableHeight / 2;
 
-    // Separate by type
+    // Separate by type - projects inner, persons outer
     const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
     const persons = nodes.filter(n => n.node_type.toLowerCase() === 'person');
 
-    const basePos: Record<string, [number, number]> = {};
+    const positions: Record<string, [number, number]> = {};
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
 
-    // --- PROJECTS: Grid layout at top ---
-    const projectSpacingX = 90;
-    const projectSpacingY = 70;
-    const projectsPerRow = Math.max(1, Math.ceil(Math.sqrt(projects.length * 1.5)));
-    const projectRows = Math.ceil(projects.length / projectsPerRow);
-    const projectStartY = headerHeight + 60;
-    const projectGridWidth = (projectsPerRow - 1) * projectSpacingX;
-
-    projects.forEach((node, i) => {
-      const row = Math.floor(i / projectsPerRow);
-      const col = i % projectsPerRow;
-      const nodesInThisRow = Math.min(projectsPerRow, projects.length - row * projectsPerRow);
-      const rowWidth = (nodesInThisRow - 1) * projectSpacingX;
-      const rowStartX = centerX - rowWidth / 2;
-      const x = rowStartX + col * projectSpacingX;
-      const y = projectStartY + row * projectSpacingY;
-      basePos[node.node_id] = [x, y];
-    });
-
-    // --- PERSONS: Pyramid layout at bottom ---
-    const personSpacingX = 70;
-    const personSpacingY = 60;
-    const projectsEndY = projectStartY + projectRows * projectSpacingY + 40;
-    const personStartY = Math.max(projectsEndY, availableHeight * 0.35);
-
-    // Calculate pyramid rows (1, 2, 3, 4... nodes per row)
-    let personsPlaced = 0;
-    let pyramidRow = 0;
-    const pyramidData: { row: number; startIndex: number; count: number }[] = [];
-    
-    while (personsPlaced < persons.length) {
-      const nodesInRow = pyramidRow + 1;
-      const actualCount = Math.min(nodesInRow, persons.length - personsPlaced);
-      pyramidData.push({ row: pyramidRow, startIndex: personsPlaced, count: actualCount });
-      personsPlaced += actualCount;
-      pyramidRow++;
-    }
-
-    // If too many rows, use wider rows
-    const maxPyramidRows = Math.floor((availableHeight - personStartY) / personSpacingY);
-    if (pyramidData.length > maxPyramidRows && maxPyramidRows > 0) {
-      // Recalculate with more nodes per row
-      pyramidData.length = 0;
-      personsPlaced = 0;
-      pyramidRow = 0;
-      const baseNodesPerRow = Math.ceil(persons.length / maxPyramidRows);
-      while (personsPlaced < persons.length) {
-        const nodesInRow = baseNodesPerRow + pyramidRow;
-        const actualCount = Math.min(nodesInRow, persons.length - personsPlaced);
-        pyramidData.push({ row: pyramidRow, startIndex: personsPlaced, count: actualCount });
-        personsPlaced += actualCount;
-        pyramidRow++;
-      }
-    }
-
-    pyramidData.forEach(({ row, startIndex, count }) => {
-      const rowWidth = (count - 1) * personSpacingX;
-      const rowStartX = centerX - rowWidth / 2;
-      for (let i = 0; i < count; i++) {
-        const person = persons[startIndex + i];
-        const x = rowStartX + i * personSpacingX;
-        const y = personStartY + row * personSpacingY;
-        basePos[person.node_id] = [x, y];
-      }
-    });
-
-    basePositionsRef.current = basePos;
-
-    // Animate with gentle floating motion (small amplitude to prevent overlap)
-    const animate = () => {
-      timeRef.current += 0.012;
-      const t = timeRef.current;
-
-      const animatedPos: Record<string, [number, number]> = {};
-      let i = 0;
-      for (const nodeId in basePos) {
-        const [baseX, baseY] = basePos[nodeId];
-        const phase = i * 0.5;
-        // Very gentle drift (small amplitude)
-        const driftX = Math.sin(t + phase) * 3 + Math.cos(t * 0.6 + phase * 1.2) * 2;
-        const driftY = Math.cos(t * 0.7 + phase) * 2.5 + Math.sin(t * 0.4 + phase * 0.8) * 1.5;
-        animatedPos[nodeId] = [baseX + driftX, baseY + driftY];
-        i++;
-      }
-
-      setPositions(animatedPos);
-      animationRef.current = requestAnimationFrame(animate);
+    // Calculate spiral positions for a group
+    const placeInSpiral = (
+      nodeList: GraphNode[],
+      baseRadius: number,
+      spacing: number
+    ) => {
+      nodeList.forEach((node, i) => {
+        const angle = i * goldenAngle;
+        const radius = baseRadius + spacing * Math.sqrt(i);
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        positions[node.node_id] = [x, y];
+      });
     };
 
-    animate();
+    // Projects in inner spiral (smaller radius)
+    const innerBaseRadius = 60;
+    const innerSpacing = 35;
+    placeInSpiral(projects, innerBaseRadius, innerSpacing);
 
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, [nodes, width, height, isActive]);
+    // Calculate outer spiral start to not overlap
+    const maxProjectRadius = projects.length > 0 
+      ? innerBaseRadius + innerSpacing * Math.sqrt(projects.length - 1) + 80
+      : 60;
 
-  return positions;
+    // Persons in outer spiral
+    const outerSpacing = 40;
+    placeInSpiral(persons, maxProjectRadius, outerSpacing);
+
+    return positions;
+  }, [nodes, width, height]);
 }
 
 export default function Graph2DCanvas({
@@ -425,7 +345,7 @@ export default function Graph2DCanvas({
   }, [edges, selectedNodeIds]);
 
   const forcePositions = useForceSimulation2D(displayNodes, displayEdges, layoutMode === 'force', dimensions.width, dimensions.height);
-  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height, layoutMode === 'spiral');
+  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height);
   const positions = layoutMode === 'force' ? forcePositions : spiralPositions;
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
