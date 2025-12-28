@@ -89,10 +89,8 @@ function useForceSimulation2D(
   const smoothedPositionsRef = useRef<Record<string, [number, number]>>({});
   const lastNodeIdsRef = useRef<string>('');
   const lastEdgeIdsRef = useRef<string>('');
-  const lerpFactor = 0.18; // Lower = smoother but slower response
+  const lerpFactor = 0.18;
 
-  // Memoize node/edge identity to avoid unnecessary simulation restarts
-  // Include relationship_type in edge signature to detect relationship type changes
   const nodeIds = useMemo(() => nodes.map(n => n.node_id).sort().join(','), [nodes]);
   const edgeIds = useMemo(() => edges.map(e => `${e.source_node}-${e.target_node}-${e.relationship_type}`).sort().join(','), [edges]);
 
@@ -104,35 +102,10 @@ function useForceSimulation2D(
       return;
     }
 
-    // Check if we can incrementally update instead of recreating
     const nodesChanged = nodeIds !== lastNodeIdsRef.current;
     const edgesChanged = edgeIds !== lastEdgeIdsRef.current;
     const hasExistingSimulation = simulationRef.current && nodesRef.current.length > 0;
 
-    // If only edges changed and simulation exists, just update links
-    if (hasExistingSimulation && !nodesChanged && edgesChanged) {
-      const simLinks: SimLink[] = edges
-        .filter(e => 
-          nodesRef.current.some(n => n.id === e.source_node) && 
-          nodesRef.current.some(n => n.id === e.target_node)
-        )
-        .map(edge => ({
-          source: edge.source_node,
-          target: edge.target_node,
-          edge,
-        }));
-      
-      simulationRef.current!.force('link', d3Force.forceLink(simLinks)
-        .id((d: any) => d.id)
-        .distance(180)
-        .strength(0.12)
-      );
-      simulationRef.current!.alpha(0.3).restart();
-      lastEdgeIdsRef.current = edgeIds;
-      return;
-    }
-
-    // If nothing changed, don't recreate
     if (hasExistingSimulation && !nodesChanged && !edgesChanged) {
       return;
     }
@@ -145,25 +118,134 @@ function useForceSimulation2D(
       existingPositions.set(n.id, { x: n.x, y: n.y });
     });
 
-    // Use full viewport for global layout
     const legendHeight = 80;
     const availableHeight = height - legendHeight;
-    const centerX = width / 2;
     const centerY = availableHeight / 2;
-    const spreadX = width * 0.4;
-    const spreadY = availableHeight * 0.32;
 
-    const simNodes: SimNode[] = nodes.map((node, i) => {
+    // Separate projects and people
+    const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
+    const people = nodes.filter(n => n.node_type.toLowerCase() === 'person');
+
+    // Build adjacency: which people are connected to which projects
+    const projectToPeople = new Map<string, string[]>();
+    const personToProjects = new Map<string, string[]>();
+    
+    projects.forEach(p => projectToPeople.set(p.node_id, []));
+    people.forEach(p => personToProjects.set(p.node_id, []));
+    
+    edges.forEach(edge => {
+      const sourceNode = nodes.find(n => n.node_id === edge.source_node);
+      const targetNode = nodes.find(n => n.node_id === edge.target_node);
+      if (!sourceNode || !targetNode) return;
+      
+      if (sourceNode.node_type.toLowerCase() === 'project' && targetNode.node_type.toLowerCase() === 'person') {
+        projectToPeople.get(sourceNode.node_id)?.push(targetNode.node_id);
+        personToProjects.get(targetNode.node_id)?.push(sourceNode.node_id);
+      } else if (targetNode.node_type.toLowerCase() === 'project' && sourceNode.node_type.toLowerCase() === 'person') {
+        projectToPeople.get(targetNode.node_id)?.push(sourceNode.node_id);
+        personToProjects.get(sourceNode.node_id)?.push(targetNode.node_id);
+      }
+    });
+
+    // Calculate cluster radius based on number of people - smaller to prevent overlap
+    const clusterRadius = (count: number) => Math.max(60, 35 + count * 18);
+
+    // First pass: compute all cluster radii
+    const projectRadii: number[] = projects.map(project => {
+      const peopleCount = projectToPeople.get(project.node_id)?.length || 0;
+      return clusterRadius(peopleCount);
+    });
+
+    // Calculate total width needed for all clusters with padding between them
+    const clusterPadding = 40;
+    const totalClusterWidth = projectRadii.reduce((sum, r) => sum + r * 2 + clusterPadding, 0) - clusterPadding;
+    
+    // Scale down if clusters don't fit
+    const availableWidth = width - 120; // Leave margin on sides
+    const scaleFactor = totalClusterWidth > availableWidth ? availableWidth / totalClusterWidth : 1;
+    
+    // Position projects using cumulative widths
+    const projectPositions = new Map<string, { x: number; y: number; radius: number }>();
+    let currentX = 60; // Start margin
+    
+    projects.forEach((project, i) => {
+      const scaledRadius = projectRadii[i] * scaleFactor;
+      const x = currentX + scaledRadius;
+      projectPositions.set(project.node_id, { x, y: centerY, radius: scaledRadius });
+      currentX = x + scaledRadius + clusterPadding * scaleFactor;
+    });
+
+    // Calculate angular positions for people around each project
+    const personAngles = new Map<string, { projectId: string; angle: number; radius: number }>();
+    
+    projects.forEach(project => {
+      const peopleIds = projectToPeople.get(project.node_id) || [];
+      const projectPos = projectPositions.get(project.node_id)!;
+      
+      peopleIds.forEach((personId, i) => {
+        const existingAngles = personAngles.get(personId);
+        if (!existingAngles) {
+          const angle = (i / peopleIds.length) * Math.PI * 2 - Math.PI / 2;
+          personAngles.set(personId, { 
+            projectId: project.node_id, 
+            angle, 
+            radius: projectPos.radius 
+          });
+        }
+      });
+    });
+
+    // Handle orphan people (not connected to any project)
+    const orphanPeople = people.filter(p => !personAngles.has(p.node_id));
+    if (orphanPeople.length > 0) {
+      const orphanCenterX = width / 2;
+      const orphanRadius = clusterRadius(orphanPeople.length);
+      orphanPeople.forEach((person, i) => {
+        const angle = (i / orphanPeople.length) * Math.PI * 2;
+        personAngles.set(person.node_id, {
+          projectId: '__orphan__',
+          angle,
+          radius: orphanRadius
+        });
+      });
+    }
+
+    // Create simulation nodes with initial positions
+    const simNodes: SimNode[] = nodes.map((node) => {
       const existing = existingPositions.get(node.node_id);
-      const angle = (i / nodes.length) * Math.PI * 2;
       const isProject = node.node_type.toLowerCase() === 'project';
-      const verticalOffset = isProject ? -spreadY : spreadY;
-      return {
-        id: node.node_id,
-        x: existing?.x ?? centerX + Math.cos(angle) * spreadX + (Math.random() - 0.5) * 80,
-        y: existing?.y ?? centerY + verticalOffset + (Math.random() - 0.5) * 40,
-        node,
-      };
+      
+      let x: number, y: number;
+      
+      if (isProject) {
+        const pos = projectPositions.get(node.node_id);
+        x = existing?.x ?? pos?.x ?? width / 2;
+        y = existing?.y ?? pos?.y ?? centerY;
+      } else {
+        const angleData = personAngles.get(node.node_id);
+        if (angleData && angleData.projectId !== '__orphan__') {
+          const projectPos = projectPositions.get(angleData.projectId);
+          if (projectPos) {
+            x = existing?.x ?? projectPos.x + Math.cos(angleData.angle) * angleData.radius;
+            y = existing?.y ?? projectPos.y + Math.sin(angleData.angle) * angleData.radius;
+          } else {
+            x = existing?.x ?? width / 2 + (Math.random() - 0.5) * 100;
+            y = existing?.y ?? centerY + (Math.random() - 0.5) * 100;
+          }
+        } else {
+          // Orphan person
+          const angleData = personAngles.get(node.node_id);
+          if (angleData) {
+            x = existing?.x ?? width / 2 + Math.cos(angleData.angle) * angleData.radius;
+            y = existing?.y ?? centerY + Math.sin(angleData.angle) * angleData.radius;
+          } else {
+            x = existing?.x ?? width / 2 + (Math.random() - 0.5) * 100;
+            y = existing?.y ?? centerY + (Math.random() - 0.5) * 100;
+          }
+        }
+      }
+      
+      return { id: node.node_id, x, y, node };
     });
 
     const simLinks: SimLink[] = edges
@@ -171,65 +253,82 @@ function useForceSimulation2D(
         simNodes.some(n => n.id === e.source_node) && 
         simNodes.some(n => n.id === e.target_node)
       )
-      .map(edge => ({
-        source: edge.source_node,
-        target: edge.target_node,
-        edge,
-      }));
+      .map(edge => ({ source: edge.source_node, target: edge.target_node, edge }));
 
     nodesRef.current = simNodes;
 
-    const createYForce = () => {
+    // Custom force: position projects along horizontal spine
+    const createProjectSpineForce = () => {
       let nodes: SimNode[] = [];
       const force = (alpha: number) => {
         nodes.forEach(node => {
-          const isProject = node.node.node_type.toLowerCase() === 'project';
-          const targetY = isProject ? centerY - spreadY : centerY + spreadY;
-          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.25;
+          if (node.node.node_type.toLowerCase() !== 'project') return;
+          const targetPos = projectPositions.get(node.id);
+          if (!targetPos) return;
+          
+          // Strong X force to maintain spine
+          node.vx = (node.vx || 0) + (targetPos.x - node.x) * alpha * 0.3;
+          // Keep projects centered vertically
+          node.vy = (node.vy || 0) + (centerY - node.y) * alpha * 0.15;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
       return force;
     };
 
-    // Create gentle drift force for continuous floating motion
+    // Custom force: pull people into radial halos around their project
+    const createRadialClusterForce = () => {
+      let nodes: SimNode[] = [];
+      const force = (alpha: number) => {
+        nodes.forEach(node => {
+          if (node.node.node_type.toLowerCase() !== 'person') return;
+          
+          const angleData = personAngles.get(node.id);
+          if (!angleData || angleData.projectId === '__orphan__') return;
+          
+          const projectNode = nodes.find(n => n.id === angleData.projectId);
+          if (!projectNode) return;
+          
+          // Target position: radial from project center
+          const targetX = projectNode.x + Math.cos(angleData.angle) * angleData.radius;
+          const targetY = projectNode.y + Math.sin(angleData.angle) * angleData.radius;
+          
+          // Pull toward radial position
+          node.vx = (node.vx || 0) + (targetX - node.x) * alpha * 0.15;
+          node.vy = (node.vy || 0) + (targetY - node.y) * alpha * 0.15;
+        });
+      };
+      force.initialize = (n: SimNode[]) => { nodes = n; };
+      return force;
+    };
+
+    // Gentle drift for floating animation
     const createDriftForce = () => {
       let nodes: SimNode[] = [];
       let time = 0;
       const force = (alpha: number) => {
-        time += 0.02;
+        time += 0.015;
         nodes.forEach((node, i) => {
-          // Gentle orbital drift - each node has unique phase
           const phase = (i / nodes.length) * Math.PI * 2;
-          const driftStrength = 0.3;
+          const driftStrength = 0.2;
           node.vx = (node.vx || 0) + Math.sin(time + phase) * driftStrength * alpha;
-          node.vy = (node.vy || 0) + Math.cos(time + phase * 1.5) * driftStrength * 0.5 * alpha;
+          node.vy = (node.vy || 0) + Math.cos(time + phase * 1.3) * driftStrength * 0.6 * alpha;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
       return force;
     };
 
-    // Create bounds force - gentle nudges that increase near edges
+    // Bounds force
     const createBoundsForce = () => {
       let nodes: SimNode[] = [];
-      const padding = 80;
+      const padding = 60;
       const force = (alpha: number) => {
-        const strength = 0.8;
         nodes.forEach(node => {
-          // Gentle nudge back toward center when near edges
-          if (node.x < padding) {
-            node.vx = (node.vx || 0) + (padding - node.x) * alpha * strength;
-          }
-          if (node.x > width - padding) {
-            node.vx = (node.vx || 0) + (width - padding - node.x) * alpha * strength;
-          }
-          if (node.y < padding) {
-            node.vy = (node.vy || 0) + (padding - node.y) * alpha * strength;
-          }
-          if (node.y > availableHeight - padding) {
-            node.vy = (node.vy || 0) + (availableHeight - padding - node.y) * alpha * strength;
-          }
+          if (node.x < padding) node.vx = (node.vx || 0) + (padding - node.x) * alpha * 0.5;
+          if (node.x > width - padding) node.vx = (node.vx || 0) + (width - padding - node.x) * alpha * 0.5;
+          if (node.y < padding) node.vy = (node.vy || 0) + (padding - node.y) * alpha * 0.5;
+          if (node.y > availableHeight - padding) node.vy = (node.vy || 0) + (availableHeight - padding - node.y) * alpha * 0.5;
         });
       };
       force.initialize = (n: SimNode[]) => { nodes = n; };
@@ -239,30 +338,44 @@ function useForceSimulation2D(
     const simulation = d3Force.forceSimulation(simNodes)
       .force('link', d3Force.forceLink(simLinks)
         .id((d: any) => d.id)
-        .distance(180)
-        .strength(0.12)
+        .distance((link: any) => {
+          // Shorter links between project and people for tighter clusters
+          const source = nodes.find(n => n.node_id === (typeof link.source === 'string' ? link.source : link.source.id));
+          const target = nodes.find(n => n.node_id === (typeof link.target === 'string' ? link.target : link.target.id));
+          if (!source || !target) return 100;
+          const sourceIsProject = source.node_type.toLowerCase() === 'project';
+          const targetIsProject = target.node_type.toLowerCase() === 'project';
+          if (sourceIsProject !== targetIsProject) return 90; // Project-person link
+          if (sourceIsProject && targetIsProject) return 200; // Project-project link
+          return 60; // Person-person link
+        })
+        .strength(0.3)
       )
-      .force('charge', d3Force.forceManyBody().strength(-400).distanceMax(500))
-      .force('center', d3Force.forceCenter(centerX, centerY).strength(0.015))
-      .force('collision', d3Force.forceCollide().radius(70).strength(0.6))
-      .force('yAxis', createYForce())
+      .force('charge', d3Force.forceManyBody()
+        .strength((d: any) => d.node.node_type.toLowerCase() === 'project' ? -300 : -80)
+        .distanceMax(400)
+      )
+      .force('collision', d3Force.forceCollide()
+        .radius((d: any) => d.node.node_type.toLowerCase() === 'project' ? 50 : 30)
+        .strength(0.8)
+      )
+      .force('projectSpine', createProjectSpineForce())
+      .force('radialCluster', createRadialClusterForce())
       .force('bounds', createBoundsForce())
       .force('drift', createDriftForce())
-      .alphaDecay(0.015)
-      .velocityDecay(0.55)
-      .alphaTarget(0.08); // Keep simulation running for continuous floating motion
+      .alphaDecay(0.02)
+      .velocityDecay(0.4)
+      .alphaTarget(0.05);
 
     simulation.on('tick', () => {
       const newPositions: Record<string, [number, number]> = {};
       simNodes.forEach(node => {
         const prev = smoothedPositionsRef.current[node.id];
         if (prev) {
-          // Lerp: smoothly interpolate toward target position
           const smoothedX = prev[0] + (node.x - prev[0]) * lerpFactor;
           const smoothedY = prev[1] + (node.y - prev[1]) * lerpFactor;
           newPositions[node.id] = [smoothedX, smoothedY];
         } else {
-          // First frame - use exact position
           newPositions[node.id] = [node.x, node.y];
         }
       });
@@ -640,7 +753,10 @@ export default function Graph2DCanvas({
     return NODE_TYPE_COLORS[node.node_type.toLowerCase()] || NODE_TYPE_COLORS.default;
   };
 
-  const getNodeSize = (node: GraphNode) => {
+  const getNodeSize = (node: GraphNode, forceMode: boolean = false) => {
+    if (layoutMode === 'force' || forceMode) {
+      return node.node_type.toLowerCase() === 'project' ? 38 : 16;
+    }
     return node.node_type.toLowerCase() === 'project' ? 28 : 22;
   };
 
@@ -804,6 +920,7 @@ export default function Graph2DCanvas({
                     fillOpacity={0.3}
                     stroke={color}
                     strokeWidth={isSelected ? 3 : 2}
+                    strokeDasharray={layoutMode === 'force' ? '4 2' : undefined}
                     filter={isSelected || isFocused ? `url(#glow-person)` : undefined}
                   />
                 )}
