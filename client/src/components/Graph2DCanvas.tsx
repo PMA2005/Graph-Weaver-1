@@ -339,17 +339,17 @@ function useForceSimulation2D(
       .force('link', d3Force.forceLink(simLinks)
         .id((d: any) => d.id)
         .distance((link: any) => {
-          // Shorter links between project and people for tighter clusters
+          // Longer links for better clickability
           const source = nodes.find(n => n.node_id === (typeof link.source === 'string' ? link.source : link.source.id));
           const target = nodes.find(n => n.node_id === (typeof link.target === 'string' ? link.target : link.target.id));
-          if (!source || !target) return 100;
+          if (!source || !target) return 150;
           const sourceIsProject = source.node_type.toLowerCase() === 'project';
           const targetIsProject = target.node_type.toLowerCase() === 'project';
-          if (sourceIsProject !== targetIsProject) return 90; // Project-person link
-          if (sourceIsProject && targetIsProject) return 200; // Project-project link
-          return 60; // Person-person link
+          if (sourceIsProject !== targetIsProject) return 140; // Project-person link
+          if (sourceIsProject && targetIsProject) return 280; // Project-project link
+          return 100; // Person-person link
         })
-        .strength(0.3)
+        .strength(0.25)
       )
       .force('charge', d3Force.forceManyBody()
         .strength((d: any) => d.node.node_type.toLowerCase() === 'project' ? -300 : -80)
@@ -845,7 +845,7 @@ export default function Graph2DCanvas({
                     x2={targetPos[0]}
                     y2={targetPos[1]}
                     stroke="transparent"
-                    strokeWidth={20 / Math.min(Math.max(transform.scale, 0.3), 4)}
+                    strokeWidth={30 / Math.min(Math.max(transform.scale, 0.3), 4)}
                     style={{ cursor: 'pointer' }}
                     onClick={(e) => {
                       e.stopPropagation();
