@@ -235,13 +235,19 @@ function useForceSimulation2D(
   return positions;
 }
 
-// Spiral layout with golden angle distribution
+// Stratified spiral layout: projects at top-center in curved rows, persons in triangular arc below
 function useSpiralLayout(
   nodes: GraphNode[],
   width: number,
   height: number
 ): Record<string, [number, number]> {
-  return useMemo(() => {
+  const [positions, setPositions] = useState<Record<string, [number, number]>>({});
+  const basePositionsRef = useRef<Record<string, [number, number]>>({});
+  const animationRef = useRef<number | null>(null);
+  const timeRef = useRef(0);
+
+  // Calculate base positions
+  const basePositions = useMemo(() => {
     if (nodes.length === 0 || width === 0 || height === 0) return {};
 
     const legendHeight = 80;
@@ -249,44 +255,107 @@ function useSpiralLayout(
     const centerX = width / 2;
     const centerY = availableHeight / 2;
 
-    // Separate by type - projects inner, persons outer
     const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
     const persons = nodes.filter(n => n.node_type.toLowerCase() === 'person');
 
-    const positions: Record<string, [number, number]> = {};
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
+    const result: Record<string, [number, number]> = {};
 
-    // Calculate spiral positions for a group
-    const placeInSpiral = (
-      nodeList: GraphNode[],
-      baseRadius: number,
-      spacing: number
-    ) => {
-      nodeList.forEach((node, i) => {
-        const angle = i * goldenAngle;
-        const radius = baseRadius + spacing * Math.sqrt(i);
-        const x = centerX + Math.cos(angle) * radius;
-        const y = centerY + Math.sin(angle) * radius;
-        positions[node.node_id] = [x, y];
+    // Projects: curved rows at top-center
+    const projectSpacing = 90;
+    const rowHeight = 70;
+    const maxRowWidth = width * 0.7;
+    const projectsPerRow = Math.max(1, Math.floor(maxRowWidth / projectSpacing));
+    
+    projects.forEach((node, i) => {
+      const row = Math.floor(i / projectsPerRow);
+      const col = i % projectsPerRow;
+      const rowCount = Math.min(projectsPerRow, projects.length - row * projectsPerRow);
+      const rowStartX = centerX - ((rowCount - 1) * projectSpacing) / 2;
+      
+      // Add slight wave curve to each row
+      const waveOffset = Math.sin((col / (rowCount - 1 || 1)) * Math.PI) * 15;
+      
+      const x = rowStartX + col * projectSpacing;
+      const y = centerY - availableHeight * 0.25 + row * rowHeight + waveOffset;
+      
+      result[node.node_id] = [x, y];
+    });
+
+    // Persons: triangular arc pattern at bottom/outer
+    const personCount = persons.length;
+    if (personCount > 0) {
+      // Create arc from bottom-left to bottom-right, curving upward at edges
+      const arcWidth = width * 0.8;
+      const arcHeight = availableHeight * 0.45;
+      const startY = centerY + availableHeight * 0.1;
+      
+      // Distribute persons in multiple arcs
+      const nodesPerArc = Math.ceil(Math.sqrt(personCount) * 2);
+      const arcCount = Math.ceil(personCount / nodesPerArc);
+      
+      persons.forEach((node, i) => {
+        const arcIndex = Math.floor(i / nodesPerArc);
+        const posInArc = i % nodesPerArc;
+        const nodesInThisArc = Math.min(nodesPerArc, personCount - arcIndex * nodesPerArc);
+        
+        // Progress along arc (0 to 1)
+        const t = nodesInThisArc > 1 ? posInArc / (nodesInThisArc - 1) : 0.5;
+        
+        // Arc curves down at center, up at edges (inverted parabola)
+        const arcRadius = 0.6 + arcIndex * 0.25;
+        const xSpread = arcWidth * arcRadius * 0.5;
+        const x = centerX + (t - 0.5) * 2 * xSpread;
+        
+        // Parabolic curve: higher at edges, lower at center
+        const curveDepth = arcHeight * (0.3 + arcIndex * 0.15);
+        const parabola = 4 * (t - 0.5) * (t - 0.5); // 0 at center, 1 at edges
+        const y = startY + curveDepth * (1 - parabola) + arcIndex * 60;
+        
+        result[node.node_id] = [x, y];
       });
+    }
+
+    return result;
+  }, [nodes, width, height]);
+
+  // Animation loop for floating effect
+  useEffect(() => {
+    if (Object.keys(basePositions).length === 0) return;
+
+    basePositionsRef.current = basePositions;
+
+    const animate = () => {
+      timeRef.current += 0.015;
+      const time = timeRef.current;
+      
+      const newPositions: Record<string, [number, number]> = {};
+      
+      Object.entries(basePositionsRef.current).forEach(([id, [baseX, baseY]], index) => {
+        // Unique phase for each node based on index
+        const phase = (index * 0.7) % (Math.PI * 2);
+        const amplitude = 4;
+        
+        // Gentle floating motion
+        const dx = Math.sin(time + phase) * amplitude;
+        const dy = Math.cos(time * 0.8 + phase * 1.3) * amplitude * 0.7;
+        
+        newPositions[id] = [baseX + dx, baseY + dy];
+      });
+      
+      setPositions(newPositions);
+      animationRef.current = requestAnimationFrame(animate);
     };
 
-    // Projects in inner spiral (smaller radius)
-    const innerBaseRadius = 60;
-    const innerSpacing = 35;
-    placeInSpiral(projects, innerBaseRadius, innerSpacing);
+    animationRef.current = requestAnimationFrame(animate);
 
-    // Calculate outer spiral start to not overlap
-    const maxProjectRadius = projects.length > 0 
-      ? innerBaseRadius + innerSpacing * Math.sqrt(projects.length - 1) + 80
-      : 60;
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [basePositions]);
 
-    // Persons in outer spiral
-    const outerSpacing = 40;
-    placeInSpiral(persons, maxProjectRadius, outerSpacing);
-
-    return positions;
-  }, [nodes, width, height]);
+  return positions;
 }
 
 export default function Graph2DCanvas({
