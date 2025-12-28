@@ -85,7 +85,14 @@ function useForceSimulation2D(
   const simulationRef = useRef<d3Force.Simulation<SimNode, SimLink> | null>(null);
   const nodesRef = useRef<SimNode[]>([]);
   const smoothedPositionsRef = useRef<Record<string, [number, number]>>({});
+  const lastNodeIdsRef = useRef<string>('');
+  const lastEdgeIdsRef = useRef<string>('');
   const lerpFactor = 0.18; // Lower = smoother but slower response
+
+  // Memoize node/edge identity to avoid unnecessary simulation restarts
+  // Include relationship_type in edge signature to detect relationship type changes
+  const nodeIds = useMemo(() => nodes.map(n => n.node_id).sort().join(','), [nodes]);
+  const edgeIds = useMemo(() => edges.map(e => `${e.source_node}-${e.target_node}-${e.relationship_type}`).sort().join(','), [edges]);
 
   useEffect(() => {
     if (!isActive || nodes.length === 0 || width === 0 || height === 0) {
@@ -94,6 +101,42 @@ function useForceSimulation2D(
       }
       return;
     }
+
+    // Check if we can incrementally update instead of recreating
+    const nodesChanged = nodeIds !== lastNodeIdsRef.current;
+    const edgesChanged = edgeIds !== lastEdgeIdsRef.current;
+    const hasExistingSimulation = simulationRef.current && nodesRef.current.length > 0;
+
+    // If only edges changed and simulation exists, just update links
+    if (hasExistingSimulation && !nodesChanged && edgesChanged) {
+      const simLinks: SimLink[] = edges
+        .filter(e => 
+          nodesRef.current.some(n => n.id === e.source_node) && 
+          nodesRef.current.some(n => n.id === e.target_node)
+        )
+        .map(edge => ({
+          source: edge.source_node,
+          target: edge.target_node,
+          edge,
+        }));
+      
+      simulationRef.current!.force('link', d3Force.forceLink(simLinks)
+        .id((d: any) => d.id)
+        .distance(180)
+        .strength(0.12)
+      );
+      simulationRef.current!.alpha(0.3).restart();
+      lastEdgeIdsRef.current = edgeIds;
+      return;
+    }
+
+    // If nothing changed, don't recreate
+    if (hasExistingSimulation && !nodesChanged && !edgesChanged) {
+      return;
+    }
+
+    lastNodeIdsRef.current = nodeIds;
+    lastEdgeIdsRef.current = edgeIds;
 
     const existingPositions = new Map<string, { x: number; y: number }>();
     nodesRef.current.forEach(n => {

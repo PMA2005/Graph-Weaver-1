@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertNodeSchema, insertEdgeSchema, graphDataSchema } from "@shared/schema";
+import { insertNodeSchema, insertEdgeSchema, graphDataSchema, updateNodeSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -62,7 +62,16 @@ export async function registerRoutes(
 
   app.patch("/api/nodes/:nodeId", (req, res) => {
     try {
-      const node = storage.updateNode(req.params.nodeId, req.body);
+      // Validate update data - only allows display_name, description, node_type
+      const parsed = updateNodeSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid update data", 
+          details: parsed.error.errors 
+        });
+      }
+      
+      const node = storage.updateNode(req.params.nodeId, parsed.data);
       if (!node) {
         return res.status(404).json({ error: "Node not found" });
       }
