@@ -1,4 +1,4 @@
-import { X, MousePointer2, Move, ZoomIn, RotateCcw, Play } from 'lucide-react';
+import { X, MousePointer2, Move, ZoomIn, RotateCcw, Play, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HelpOverlayProps {
@@ -14,8 +14,8 @@ const HELP_ITEMS = [
   },
   {
     icon: Move,
-    title: 'Drag to Rotate',
-    description: 'Click and drag anywhere to rotate the entire graph view',
+    title: 'Drag to Pan',
+    description: 'Click and drag anywhere to move around the graph view',
   },
   {
     icon: ZoomIn,
@@ -26,6 +26,11 @@ const HELP_ITEMS = [
     icon: RotateCcw,
     title: 'Reset View',
     description: 'Click the reset button in the top bar to return to the starting view',
+  },
+  {
+    icon: History,
+    title: 'Data History',
+    description: 'View and restore previous data versions. Auto-saved before each import',
   },
 ];
 

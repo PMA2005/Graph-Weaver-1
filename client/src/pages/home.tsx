@@ -14,6 +14,7 @@ import EditNodeModal from '@/components/EditNodeModal';
 import AddEdgeModal from '@/components/AddEdgeModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import FocusOverlay from '@/components/FocusOverlay';
+import HistoryModal from '@/components/HistoryModal';
 import { useToast } from '@/hooks/use-toast';
 import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
@@ -28,6 +29,7 @@ export default function Home() {
   const [showAddNode, setShowAddNode] = useState(false);
   const [showEditNode, setShowEditNode] = useState(false);
   const [showAddEdge, setShowAddEdge] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
   const [graphKey, setGraphKey] = useState(0);
   const { toast } = useToast();
@@ -342,7 +344,7 @@ export default function Home() {
     );
   }
 
-  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || !!deleteTarget || showHelp;
+  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || showHistory || !!deleteTarget || showHelp;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -353,6 +355,7 @@ export default function Home() {
         onHelp={() => setShowHelp(true)}
         onSettings={() => toast({ title: 'Settings', description: 'Settings panel coming soon' })}
         onAddNode={() => setShowAddNode(true)}
+        onHistory={() => setShowHistory(true)}
         nodes={nodes}
         onNodeSelect={(node) => {
           setTypeFilter(null); // Clear type filter so searched node is visible
@@ -470,6 +473,17 @@ export default function Home() {
           onClose={() => setDeleteTarget(null)}
           onConfirm={handleDeleteConfirm}
           isLoading={deleteNodeMutation.isPending || deleteEdgeMutation.isPending}
+        />
+      )}
+
+      {showHistory && (
+        <HistoryModal
+          onClose={() => setShowHistory(false)}
+          onRestored={() => {
+            setShowHistory(false);
+            clearSelection();
+            toast({ title: 'Restored', description: 'Data has been restored from snapshot' });
+          }}
         />
       )}
     </div>

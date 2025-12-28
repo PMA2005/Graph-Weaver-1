@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, Search, MousePointer, Eye, Layers, ZoomIn, Maximize2, PartyPopper } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Search, MousePointer, Eye, Layers, ZoomIn, Maximize2, PartyPopper, History } from 'lucide-react';
 
 interface TourStep {
   id: string;
@@ -58,6 +58,14 @@ const tourSteps: TourStep[] = [
     description: 'When you select nodes, click "View Focused" to see only those nodes and their connections. Great for exploring relationships!',
     position: 'center',
     icon: <Maximize2 className="w-6 h-6" />,
+  },
+  {
+    id: 'history',
+    title: 'Data History',
+    description: 'Click the clock icon to view and restore previous data versions. Your data is automatically saved before each import, so you can always go back!',
+    targetSelector: '[data-testid="button-history"]',
+    position: 'bottom',
+    icon: <History className="w-6 h-6" />,
   },
   {
     id: 'complete',

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
-import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban } from 'lucide-react';
+import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,6 +17,7 @@ interface TopNavigationProps {
   onHelp?: () => void;
   onSettings?: () => void;
   onAddNode?: () => void;
+  onHistory?: () => void;
   nodes?: GraphNode[];
   onNodeSelect?: (node: GraphNode) => void;
 }
@@ -28,6 +29,7 @@ export default function TopNavigation({
   onHelp,
   onSettings,
   onAddNode,
+  onHistory,
   nodes = [],
   onNodeSelect,
 }: TopNavigationProps) {
@@ -295,6 +297,21 @@ export default function TopNavigation({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Import Data</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onHistory}
+              className="hidden sm:flex text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              data-testid="button-history"
+            >
+              <History className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Data History</TooltipContent>
         </Tooltip>
 
         <Tooltip>

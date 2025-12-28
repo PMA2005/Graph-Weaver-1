@@ -167,5 +167,67 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/snapshots", (_req, res) => {
+    try {
+      const snapshots = storage.getSnapshots();
+      res.json(snapshots);
+    } catch (error) {
+      console.error("Error fetching snapshots:", error);
+      res.status(500).json({ error: "Failed to fetch snapshots" });
+    }
+  });
+
+  app.post("/api/snapshots", (req, res) => {
+    try {
+      const { name, description } = req.body;
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: "Snapshot name is required" });
+      }
+      const snapshot = storage.createSnapshot(name, description);
+      res.status(201).json(snapshot);
+    } catch (error) {
+      console.error("Error creating snapshot:", error);
+      res.status(500).json({ error: "Failed to create snapshot" });
+    }
+  });
+
+  app.post("/api/snapshots/:id/restore", (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid snapshot ID" });
+      }
+      const result = storage.restoreSnapshot(id);
+      res.json({ 
+        success: true, 
+        message: `Restored ${result.nodesRestored} nodes and ${result.edgesRestored} relationships`,
+        ...result 
+      });
+    } catch (error) {
+      console.error("Error restoring snapshot:", error);
+      if ((error as Error).message === 'Snapshot not found') {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      res.status(500).json({ error: "Failed to restore snapshot" });
+    }
+  });
+
+  app.delete("/api/snapshots/:id", (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid snapshot ID" });
+      }
+      const deleted = storage.deleteSnapshot(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Snapshot not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting snapshot:", error);
+      res.status(500).json({ error: "Failed to delete snapshot" });
+    }
+  });
+
   return httpServer;
 }
