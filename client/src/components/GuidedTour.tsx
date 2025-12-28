@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, ChevronLeft, ChevronRight, Search, MousePointer, Eye, Layers, ZoomIn, Maximize2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Search, MousePointer, Eye, Layers, ZoomIn, Maximize2, PartyPopper } from 'lucide-react';
 
 interface TourStep {
   id: string;
@@ -9,6 +9,7 @@ interface TourStep {
   targetSelector?: string;
   position: 'top' | 'bottom' | 'left' | 'right' | 'center';
   icon: ReactNode;
+  isFinal?: boolean;
 }
 
 const tourSteps: TourStep[] = [
@@ -58,6 +59,14 @@ const tourSteps: TourStep[] = [
     position: 'center',
     icon: <Maximize2 className="w-6 h-6" />,
   },
+  {
+    id: 'complete',
+    title: 'Tour Complete!',
+    description: 'You\'re all set to explore the network graph! Click on nodes, try different layouts, and discover connections between people and projects.',
+    position: 'center',
+    icon: <PartyPopper className="w-6 h-6" />,
+    isFinal: true,
+  },
 ];
 
 interface GuidedTourProps {
@@ -69,10 +78,24 @@ interface GuidedTourProps {
 export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   const step = tourSteps[currentStep];
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === tourSteps.length - 1;
+
+  // Reset step when tour opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(0);
+      setTargetRect(null);
+      // Small delay to ensure UI is ready
+      const timer = setTimeout(() => setIsReady(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsReady(false);
+    }
+  }, [isOpen]);
 
   const updateTargetPosition = useCallback(() => {
     if (step.targetSelector) {
@@ -87,19 +110,29 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }
   }, [step.targetSelector]);
 
+  // Update target position with delay to prevent glitching
   useEffect(() => {
-    if (!isOpen) return;
-    updateTargetPosition();
+    if (!isOpen || !isReady) return;
+    
+    // Clear previous rect immediately to prevent stale positions
+    setTargetRect(null);
+    
+    // Delay finding the new element to allow DOM to settle
+    const timer = setTimeout(() => {
+      updateTargetPosition();
+    }, 50);
+    
     window.addEventListener('resize', updateTargetPosition);
     window.addEventListener('scroll', updateTargetPosition);
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('resize', updateTargetPosition);
       window.removeEventListener('scroll', updateTargetPosition);
     };
-  }, [isOpen, updateTargetPosition]);
+  }, [isOpen, isReady, currentStep, updateTargetPosition]);
 
   const handleNext = () => {
-    if (isLastStep) {
+    if (step.isFinal) {
       onComplete();
     } else {
       setCurrentStep(prev => prev + 1);
@@ -116,7 +149,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isReady) return null;
 
   const getTooltipPosition = (): React.CSSProperties => {
     const isMobile = window.innerWidth < 640;
@@ -251,15 +284,17 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            variant="ghost"
-            onClick={handleSkip}
-            className="text-gray-400 hover:text-white hover:bg-gray-800"
-            data-testid="button-tour-skip"
-          >
-            Skip Tour
-          </Button>
+        <div className={`flex items-center gap-3 ${step.isFinal ? 'justify-center' : 'justify-between'}`}>
+          {!step.isFinal && (
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              className="text-gray-400 hover:text-white hover:bg-gray-800"
+              data-testid="button-tour-skip"
+            >
+              Skip Tour
+            </Button>
+          )}
 
           <div className="flex items-center gap-2">
             {!isFirstStep && (
@@ -278,8 +313,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
               className="bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"
               data-testid="button-tour-next"
             >
-              {isLastStep ? 'Finish Tour' : 'Next'}
-              {!isLastStep && <ChevronRight className="w-4 h-4 ml-1" />}
+              {step.isFinal ? 'Start Exploring' : 'Next'}
+              {!step.isFinal && <ChevronRight className="w-4 h-4 ml-1" />}
             </Button>
           </div>
         </div>
