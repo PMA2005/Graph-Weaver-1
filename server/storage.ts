@@ -5,6 +5,26 @@ import type { GraphNode, GraphEdge, InsertNode, InsertEdge, GraphData } from '@s
 // Use GRAPH_DB_PATH env var if set (Electron production), otherwise fallback to dev path
 const DB_PATH = process.env.GRAPH_DB_PATH || path.join(process.cwd(), 'attached_assets', 'graph2_1765932308440.db');
 
+export interface Snapshot {
+  id: number;
+  name: string;
+  description: string;
+  nodes_json: string;
+  edges_json: string;
+  node_count: number;
+  edge_count: number;
+  created_at: string;
+}
+
+export interface SnapshotInfo {
+  id: number;
+  name: string;
+  description: string;
+  node_count: number;
+  edge_count: number;
+  created_at: string;
+}
+
 export interface IStorage {
   getGraphData(): GraphData;
   getNodes(): GraphNode[];
@@ -16,6 +36,11 @@ export interface IStorage {
   createEdge(edge: InsertEdge): GraphEdge;
   deleteEdge(sourceNode: string, targetNode: string, relationshipType?: string): boolean;
   importGraphData(data: GraphData): { nodesImported: number; edgesImported: number };
+  createSnapshot(name: string, description?: string): SnapshotInfo;
+  getSnapshots(): SnapshotInfo[];
+  getSnapshotById(id: number): Snapshot | undefined;
+  restoreSnapshot(id: number): { nodesRestored: number; edgesRestored: number };
+  deleteSnapshot(id: number): boolean;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -61,6 +86,25 @@ export class SQLiteStorage implements IStorage {
           PRIMARY KEY (source_node, target_node, relationship_type),
           FOREIGN KEY (source_node) REFERENCES nodes(node_id) ON DELETE CASCADE,
           FOREIGN KEY (target_node) REFERENCES nodes(node_id) ON DELETE CASCADE
+        )
+      `);
+    }
+
+    const snapshotsTableExists = this.db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='snapshots'"
+    ).get();
+    
+    if (!snapshotsTableExists) {
+      this.db.exec(`
+        CREATE TABLE snapshots (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          nodes_json TEXT NOT NULL,
+          edges_json TEXT NOT NULL,
+          node_count INTEGER NOT NULL,
+          edge_count INTEGER NOT NULL,
+          created_at TEXT NOT NULL
         )
       `);
     }
@@ -213,6 +257,14 @@ export class SQLiteStorage implements IStorage {
   }
 
   importGraphData(data: GraphData): { nodesImported: number; edgesImported: number } {
+    const currentNodes = this.getNodes();
+    const currentEdges = this.getEdges();
+    
+    if (currentNodes.length > 0 || currentEdges.length > 0) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      this.createSnapshot(`Auto-backup before import ${timestamp}`, 'Automatic backup created before data import');
+    }
+
     const transaction = this.db.transaction(() => {
       this.db.exec('DELETE FROM edges');
       this.db.exec('DELETE FROM nodes');
@@ -256,6 +308,105 @@ export class SQLiteStorage implements IStorage {
     });
 
     return transaction();
+  }
+
+  createSnapshot(name: string, description?: string): SnapshotInfo {
+    const nodes = this.getNodes();
+    const edges = this.getEdges();
+    const createdAt = new Date().toISOString();
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO snapshots (name, description, nodes_json, edges_json, node_count, edge_count, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(
+      name,
+      description || '',
+      JSON.stringify(nodes),
+      JSON.stringify(edges),
+      nodes.length,
+      edges.length,
+      createdAt
+    );
+    
+    return {
+      id: result.lastInsertRowid as number,
+      name,
+      description: description || '',
+      node_count: nodes.length,
+      edge_count: edges.length,
+      created_at: createdAt
+    };
+  }
+
+  getSnapshots(): SnapshotInfo[] {
+    const stmt = this.db.prepare(`
+      SELECT id, name, description, node_count, edge_count, created_at 
+      FROM snapshots 
+      ORDER BY created_at DESC
+    `);
+    return stmt.all() as SnapshotInfo[];
+  }
+
+  getSnapshotById(id: number): Snapshot | undefined {
+    const stmt = this.db.prepare('SELECT * FROM snapshots WHERE id = ?');
+    return stmt.get(id) as Snapshot | undefined;
+  }
+
+  restoreSnapshot(id: number): { nodesRestored: number; edgesRestored: number } {
+    const snapshot = this.getSnapshotById(id);
+    if (!snapshot) {
+      throw new Error('Snapshot not found');
+    }
+    
+    const nodes = JSON.parse(snapshot.nodes_json) as GraphNode[];
+    const edges = JSON.parse(snapshot.edges_json) as GraphEdge[];
+    
+    const transaction = this.db.transaction(() => {
+      this.db.exec('DELETE FROM edges');
+      this.db.exec('DELETE FROM nodes');
+
+      const insertNode = this.db.prepare(`
+        INSERT INTO nodes (node_id, node_type, display_name, description, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      const insertEdge = this.db.prepare(`
+        INSERT INTO edges (source_node, target_node, relationship_type, weight, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+
+      for (const node of nodes) {
+        insertNode.run(
+          node.node_id,
+          node.node_type,
+          node.display_name,
+          node.description || '',
+          node.created_at || new Date().toISOString()
+        );
+      }
+
+      for (const edge of edges) {
+        insertEdge.run(
+          edge.source_node,
+          edge.target_node,
+          edge.relationship_type,
+          edge.weight || 1,
+          edge.timestamp || new Date().toISOString()
+        );
+      }
+
+      return { nodesRestored: nodes.length, edgesRestored: edges.length };
+    });
+
+    return transaction();
+  }
+
+  deleteSnapshot(id: number): boolean {
+    const stmt = this.db.prepare('DELETE FROM snapshots WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
   }
 }
 

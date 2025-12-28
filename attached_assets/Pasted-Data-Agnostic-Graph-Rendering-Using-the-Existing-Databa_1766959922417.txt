@@ -1,0 +1,183 @@
+Data-Agnostic Graph Rendering Using the Existing Database
+Purpose
+
+This application must support multiple graph visualizations and datasets while continuing to use the current, existing database schema.
+
+The database must NOT be restructured.
+All flexibility must be achieved through interpretation and configuration, not schema changes.
+
+Core Design Principle
+
+One database, many graphs.
+
+The same underlying tables should be able to produce:
+
+Different graph layouts
+
+Different node groupings
+
+Different relationship views
+
+Different interpretations of the same data
+
+Existing Database as the Single Source of Truth
+1. Database Constraints
+
+The current database schema remains unchanged
+
+No new required tables
+
+No hard-coded assumptions in the visualization layer
+
+All graph logic operates on top of the existing data
+
+Data Interpretation Layer (Critical)
+2. Graph Interpretation Layer
+
+Introduce a graph interpretation layer between:
+
+Database queries
+
+Graph rendering
+
+This layer:
+
+Decides how database rows become nodes
+
+Decides how rows become edges
+
+Allows different graph “views” from the same data
+
+This is configuration-driven, not hard-coded.
+
+Multiple Graph Views From the Same Data
+3. Graph View Definitions
+
+Each graph view defines:
+
+Which database rows are nodes
+
+How node types are inferred
+
+Which relationships are shown
+
+Which fields are used for labels
+
+Which layout is used
+
+Example:
+
+Graph A: Person ↔ Project
+
+Graph B: Project ↔ Project (shared people)
+
+Graph C: Person ↔ Person (via projects)
+
+Graph D: Filtered or partial view
+
+All using the same tables.
+
+Handling “Wrong” or Mixed Data
+4. Bad or Unexpected Data Handling
+
+If data in the database:
+
+Is incomplete
+
+Is mislabeled
+
+Contains unexpected values
+
+The app should:
+
+Skip invalid rows
+
+Render partial graphs
+
+Fall back to default node styling
+
+Never crash or lock the UI
+
+This allows:
+
+One dataset to be usable for one graph
+
+Another graph to ignore incompatible records
+
+Node & Edge Mapping Rules
+5. Dynamic Node Classification
+
+Node type should be determined by:
+
+Existing fields (e.g., type, category, role)
+
+Or inferred through configuration rules
+
+Example:
+
+Same table row can be treated as:
+
+A “Person” in one graph
+
+A “Contributor” in another
+
+A generic “Node” in a third
+
+Layout Independence
+6. Layout Is Separate From Data
+
+Layouts must:
+
+Be selectable per graph view
+
+Not depend on database structure
+
+Apply to any graph generated from the DB
+
+This ensures:
+
+Current database supports radial, spiral, or force graphs
+
+Layout changes do not require DB changes
+
+UI Requirements
+7. Graph View Selector
+
+The UI should allow:
+
+Selecting a predefined graph view
+
+Re-rendering the same DB data differently
+
+Resetting or switching views instantly
+
+No data reload required.
+
+Performance & Stability
+8. Caching & Query Efficiency
+
+Database queries should be cached per view
+
+Switching graph views should not re-ingest data unnecessarily
+
+Layout recomputation should be isolated from DB access
+
+Summary
+
+This application must:
+
+Use the existing database exactly as-is
+
+Support multiple graph interpretations
+
+Handle incorrect or mixed data gracefully
+
+Allow different visual graphs without changing tables
+
+Keep the graph UI and layout reusable
+
+Final Requirement Statement
+
+The database does not change.
+The interpretation changes.
+The visualization adapts.
