@@ -755,7 +755,7 @@ export default function Graph2DCanvas({
 
   const getNodeSize = (node: GraphNode, forceMode: boolean = false) => {
     if (layoutMode === 'force' || forceMode) {
-      return node.node_type.toLowerCase() === 'project' ? 38 : 16;
+      return node.node_type.toLowerCase() === 'project' ? 38 : 24;
     }
     return node.node_type.toLowerCase() === 'project' ? 28 : 22;
   };
@@ -955,7 +955,7 @@ export default function Graph2DCanvas({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fill="#ffffff"
-                  fontSize={(isProject ? 10 : 9) / Math.min(Math.max(transform.scale, 0.3), 4)}
+                  fontSize={(isProject ? 10 : (layoutMode === 'force' ? 10 : 9)) / Math.min(Math.max(transform.scale, 0.3), 4)}
                   fontWeight={700}
                   style={{ 
                     textShadow: `0 0 4px rgba(0,0,0,0.8), 0 0 8px ${color}`,
