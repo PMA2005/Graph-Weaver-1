@@ -36,11 +36,14 @@ Available as both a web application and portable desktop apps for Windows and ma
 - **SQLite Database** - Persistent data storage with included sample data
 
 ### User Interface
+- **Search Bar** - Find people and projects by name or type with autocomplete suggestions
 - **Dark Mode Toggle** - Switch between light and dark themes with automatic system preference detection
+- **Dual Layout Modes** - Force-directed (dynamic) and Spiral (stratified) layouts with toggle in legend
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
 - **Comprehensive Legend** - Color-coded relationship types with edge color samples
 - **Details Sidebar** - View and edit node details with directional relationship information (incoming/outgoing)
 - **Connection Management** - Add and remove relationships from the sidebar
+- **Smart Relationship Updates** - Adding a relationship between already-connected nodes updates the existing connection
 - **Help Overlay** - First-time instructions that fully hide the graph for readability
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
 
@@ -48,10 +51,12 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ### Basic Interaction
 - **Click a node** - Select it and open the details sidebar
+- **Search bar** - Type to find people/projects, click result to focus on that node
 - **Scroll** - Zoom in/out (centered on cursor position)
 - **Drag background** - Pan the view
 - **+/- buttons** - Precise zoom control
 - **Click background** - Deselect all nodes
+- **Layout toggle** - Click Force/Spiral in legend to switch layout modes
 
 ### Multi-Select
 - **Ctrl+Click (Windows/Linux)** or **Cmd+Click (macOS)** - Add nodes to selection

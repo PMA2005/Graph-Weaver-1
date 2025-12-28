@@ -21,7 +21,7 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 │   │   ├── NodeDetailsSidebar.tsx   # Node details panel with directional connections (right side)
 │   │   ├── FocusOverlay.tsx         # Multi-select chip display with reorder support (bottom)
 │   │   ├── GraphLegend.tsx          # Color legend for node types and edge relationships
-│   │   ├── TopNavigation.tsx        # Header with add node button and theme toggle
+│   │   ├── TopNavigation.tsx        # Header with search bar, add node button and theme toggle
 │   │   ├── ThemeProvider.tsx        # Dark mode toggle with localStorage persistence
 │   │   ├── HelpOverlay.tsx          # Help modal for new users (opaque background)
 │   │   ├── LoadingScreen.tsx        # Loading animation
@@ -81,17 +81,25 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 
 ## Key Features
 - **2D Force-Directed Graph**: SVG-based with D3 force simulation
+- **Dual Layout Modes**: Force-directed (dynamic) and Spiral (stratified) with toggle in legend
+- **Search Bar**: Find people and projects by name/type with autocomplete suggestions
 - **Pan & Zoom**: Scroll to zoom, drag to pan, +/- buttons for precision
 - **Inverse Scaling**: Text and edges stay readable at all zoom levels
 - **Multi-Select**: Ctrl/Cmd+click to select multiple nodes
 - **Focus Mode**: View only selected nodes and their connections
 - **Selection Reordering**: Click chips to switch sidebar without removing from focus
 - **Directional Connections**: Sidebar shows incoming vs outgoing relationships
+- **Smart Relationship Updates**: Adding relationship between connected nodes updates existing connection
 - **Alphabetical Dropdowns**: People/projects sorted for easy finding
 - **Dark Mode Toggle**: System preference detection with manual override
 - **Help Overlay**: First-time user instructions
 
 ## Recent Changes
+- Added search bar to TopNavigation with autocomplete dropdown for finding nodes by name/type
+- Implemented dual layout modes: Force-directed and Spiral with toggle buttons in legend
+- Spiral layout positions projects in curved rows at top, persons in arc pattern at bottom
+- Added floating animation to spiral mode with 15px amplitude for visible movement
+- Modified edge creation to update existing connections instead of creating duplicates
 - Implemented inverse scaling for labels (fontSize / clamp(scale, 0.3, 4)) and edges (strokeWidth / clamp(scale, 0.3, 4))
 - Fixed zoom buttons to work in both full view and focused view modes (wasFocusModeRef pattern)
 - Added alphabetical sorting to AddEdgeModal dropdowns using localeCompare

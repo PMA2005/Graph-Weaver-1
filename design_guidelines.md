@@ -44,17 +44,25 @@
 
 ### Graph Layout
 - **Vertical Stratification**: Projects positioned at top (y ~ 150), people at bottom (y ~ height - 150)
-- **Force-Directed**: D3 force simulation with collision detection and centering
-- **Floating Animation**: Subtle "solar system" orbital motion for organic feel
+- **Dual Layout Modes**: 
+  - **Force-Directed**: D3 force simulation with collision detection and centering
+  - **Spiral**: Stratified layout with projects in curved rows at top, persons in arc pattern at bottom
+- **Floating Animation**: Subtle "solar system" orbital motion for organic feel (both layout modes)
 - **Pan & Zoom**: Scroll wheel zoom (0.3x - 4x range), drag to pan, +/- button controls
 
 ### Component Structure
 
 **Navigation Bar** (Top, fixed):
 - Logo/title on left with glow effect
-- Center: Add Node button
-- Right: Theme toggle (dark/light mode)
+- Center: Search bar with autocomplete dropdown for finding nodes by name/type
+- Right: Add Node button, action buttons, Theme toggle (dark/light mode)
 - Background: rgba(10, 14, 39, 0.9) with border-b-2 border-cyan-500 glow
+
+**Search Bar**:
+- Input with search icon, placeholder "Search people & projects..."
+- Autocomplete dropdown showing matching nodes with type icons
+- Cyan styling matching sci-fi theme
+- Selecting a result focuses on that node and clears any type filter
 
 **2D Canvas** (Main viewport):
 - Dark gradient background (#0a0e27 to #1a1e3f)
