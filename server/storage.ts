@@ -178,6 +178,16 @@ export class SQLiteStorage implements IStorage {
 
   createEdge(edge: InsertEdge): GraphEdge {
     const timestamp = new Date().toISOString();
+    
+    // Delete ALL existing edges between these two nodes (both directions) to prevent duplicates
+    // This ensures only one connection exists between any two nodes
+    this.db.prepare(`
+      DELETE FROM edges 
+      WHERE (source_node = ? AND target_node = ?) 
+         OR (source_node = ? AND target_node = ?)
+    `).run(edge.source_node, edge.target_node, edge.target_node, edge.source_node);
+    
+    // Insert the new edge with the user's specified direction
     const stmt = this.db.prepare(`
       INSERT INTO edges (source_node, target_node, relationship_type, weight, timestamp)
       VALUES (?, ?, ?, ?, ?)
