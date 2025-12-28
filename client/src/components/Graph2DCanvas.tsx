@@ -305,48 +305,50 @@ function useSpiralLayout(
     const result: Record<string, [number, number]> = {};
 
     // Animation buffer - add extra spacing to account for floating movement
-    const animationBuffer = 20; // Animation amplitude is 15, add margin
+    const animationBuffer = 25; // Animation amplitude is 15, add generous margin
     
     // Helper function: calculate min angular spacing for a given radius
-    const calcMinAngularSpacing = (radiusX: number, nodeSpacing: number) => {
-      const safeRadius = Math.max(radiusX, 50);
+    const calcMinAngularSpacing = (radius: number, nodeSpacing: number) => {
+      const safeRadius = Math.max(radius, 50);
       const ratio = Math.min(nodeSpacing / (2 * safeRadius), 0.95);
       return 2 * Math.asin(ratio);
     };
     
-    // === PROJECT LAYOUT - ELLIPTICAL UPPER ARC (ORIGINAL CROWN DESIGN) ===
-    const projectNodeWidth = 38;
-    const minProjectGap = 24;
+    // === PROJECT LAYOUT - ELLIPTICAL UPPER ARC (CROWN DESIGN) ===
+    const projectNodeWidth = 48; // Larger to account for full node size
+    const minProjectGap = 35; // Generous gap between projects
     const totalProjectSpacing = projectNodeWidth + minProjectGap + animationBuffer;
     
-    // Base ellipse radii for project arc
-    let projectRadiusX = width * 0.28;
-    let projectRadiusY = availableHeight * 0.15;
+    // Project arc positioned in upper portion of the screen
+    const projectCenterY = availableHeight * 0.35; // Projects centered at 35% from top
+    let projectRadiusX = width * 0.38; // Wider horizontal spread
+    let projectRadiusY = availableHeight * 0.18; // More curve (taller arc)
     
     // Arc span and center (upper arc)
-    const projectArcSpan = Math.PI * 0.82; // About 148 degrees
+    const projectArcSpan = Math.PI * 0.75; // About 135 degrees - nice curve
     const projectArcCenter = -Math.PI / 2; // Top center (-90 degrees)
     
     // Calculate minimum angular spacing needed for projects
-    const projectMinAngularSpacing = calcMinAngularSpacing(projectRadiusX, totalProjectSpacing);
-    const requiredProjectArcSpan = projects.length > 1 
+    let projectMinAngularSpacing = calcMinAngularSpacing(projectRadiusX, totalProjectSpacing);
+    let requiredProjectArcSpan = projects.length > 1 
       ? (projects.length - 1) * projectMinAngularSpacing 
       : 0;
     
     // If projects need more space, expand the radius to fit them
-    if (requiredProjectArcSpan > projectArcSpan && projects.length > 1) {
-      // Calculate how much we need to expand the radius
-      const expansionFactor = requiredProjectArcSpan / projectArcSpan;
-      // Limit expansion to prevent going off screen
-      const maxExpansion = Math.min(expansionFactor, 1.8);
-      projectRadiusX *= maxExpansion;
-      projectRadiusY *= maxExpansion * 0.7; // Keep Y expansion smaller
+    while (requiredProjectArcSpan > projectArcSpan && projects.length > 1) {
+      // Expand radius by 20% each iteration
+      projectRadiusX *= 1.2;
+      projectRadiusY *= 1.1;
+      // Recalculate
+      projectMinAngularSpacing = calcMinAngularSpacing(projectRadiusX, totalProjectSpacing);
+      requiredProjectArcSpan = (projects.length - 1) * projectMinAngularSpacing;
+      // Safety cap to prevent infinite loop
+      if (projectRadiusX > width * 0.9) break;
     }
     
-    // Recalculate spacing with potentially expanded radius
-    const actualProjectAngularSpacing = calcMinAngularSpacing(projectRadiusX, totalProjectSpacing);
+    // Calculate actual arc span to use
     const actualProjectArcSpan = projects.length > 1 
-      ? Math.min((projects.length - 1) * actualProjectAngularSpacing, projectArcSpan)
+      ? Math.min(requiredProjectArcSpan, projectArcSpan)
       : 0;
     const projectArcStart = projectArcCenter - actualProjectArcSpan / 2;
     
@@ -361,44 +363,79 @@ function useSpiralLayout(
       }
       
       const projectX = centerX + Math.cos(angle) * projectRadiusX;
-      const projectY = centerY + Math.sin(angle) * projectRadiusY;
+      const projectY = projectCenterY + Math.sin(angle) * projectRadiusY;
       
       // Clamp to viewport
-      const clampedX = Math.max(50, Math.min(width - 50, projectX));
-      const clampedY = Math.max(40, projectY);
+      const clampedX = Math.max(60, Math.min(width - 60, projectX));
+      const clampedY = Math.max(50, projectY);
       
       result[project.node_id] = [clampedX, clampedY];
     });
     
-    // === PEOPLE LAYOUT - FULL OVAL PERIMETER ===
-    const personNodeWidth = 34;
-    const minPersonGap = 28;
+    // === PEOPLE LAYOUT - HORSESHOE OVAL (avoiding project zone at top) ===
+    const personNodeWidth = 40; // Full node size
+    const minPersonGap = 30; // Generous gap between people
     const totalPersonSpacing = personNodeWidth + minPersonGap + animationBuffer;
     
-    // Base oval radii for people (outer ring surrounding projects)
-    let personRadiusX = width * 0.42;
-    let personRadiusY = availableHeight * 0.38;
+    // Calculate the lowest Y position of any project (for zone separation)
+    const projectBottomY = projectCenterY + projectRadiusY;
+    const zoneBuffer = 70; // Minimum vertical gap between project zone and people zone
+    const minPeopleTopY = projectBottomY + zoneBuffer;
     
-    // Calculate minimum angular spacing for people on full circle
-    const personMinAngularSpacing = calcMinAngularSpacing(personRadiusX, totalPersonSpacing);
-    const requiredPersonArcSpan = persons.length * personMinAngularSpacing;
+    // Dead zone at top - skip placing people where projects are
+    // This creates a horseshoe shape avoiding the top
+    const deadZoneAngle = Math.PI * 0.42; // Skip about 75 degrees on each side of top
+    const peopleArcStart = -Math.PI / 2 + deadZoneAngle; // Start after top dead zone
+    const peopleArcEnd = -Math.PI / 2 + 2 * Math.PI - deadZoneAngle; // End before top dead zone
+    const peopleArcSpan = peopleArcEnd - peopleArcStart; // About 210 degrees
+    
+    let personRadiusX = width * 0.44;
+    let personRadiusY = availableHeight * 0.30;
+    
+    // Calculate minimum angular spacing for people
+    let personMinAngularSpacing = calcMinAngularSpacing(personRadiusX, totalPersonSpacing);
+    let requiredPersonArcSpan = persons.length > 1
+      ? (persons.length - 1) * personMinAngularSpacing
+      : 0;
     
     // If people need more space, expand the radius
-    if (requiredPersonArcSpan > 2 * Math.PI && persons.length > 1) {
-      const expansionFactor = requiredPersonArcSpan / (2 * Math.PI);
-      const maxExpansion = Math.min(expansionFactor, 1.5);
-      personRadiusX *= maxExpansion;
-      personRadiusY *= maxExpansion;
+    while (requiredPersonArcSpan > peopleArcSpan && persons.length > 1) {
+      personRadiusX *= 1.15;
+      personRadiusY *= 1.1;
+      personMinAngularSpacing = calcMinAngularSpacing(personRadiusX, totalPersonSpacing);
+      requiredPersonArcSpan = (persons.length - 1) * personMinAngularSpacing;
+      // Safety cap
+      if (personRadiusX > width * 0.95) break;
     }
     
-    // Place people around the full oval perimeter
+    // AFTER radius expansion, calculate peopleCenterY to ensure separation
+    // TopY = peopleCenterY + sin(peopleArcStart) * personRadiusY
+    // We want TopY >= minPeopleTopY
+    // So peopleCenterY >= minPeopleTopY - sin(peopleArcStart) * personRadiusY
+    const topSinValue = Math.sin(peopleArcStart); // This is negative, around -0.26
+    const peopleCenterY = Math.max(
+      minPeopleTopY - topSinValue * personRadiusY,
+      availableHeight * 0.55
+    );
+    
+    // Calculate actual arc span
+    const actualPersonArcSpan = persons.length > 1
+      ? Math.min(requiredPersonArcSpan, peopleArcSpan)
+      : 0;
+    const personArcStartActual = peopleArcStart + (peopleArcSpan - actualPersonArcSpan) / 2;
+    
+    // Place people along the horseshoe oval
     persons.forEach((person, personIndex) => {
-      const t = personIndex / persons.length;
-      // Start from bottom (Math.PI/2) and go full circle
-      const angle = Math.PI / 2 + t * 2 * Math.PI;
+      let angle: number;
+      if (persons.length === 1) {
+        angle = Math.PI / 2; // Single person at bottom
+      } else {
+        const t = personIndex / (persons.length - 1);
+        angle = personArcStartActual + t * actualPersonArcSpan;
+      }
       
       const personX = centerX + Math.cos(angle) * personRadiusX;
-      const personY = centerY + Math.sin(angle) * personRadiusY;
+      const personY = peopleCenterY + Math.sin(angle) * personRadiusY;
       
       result[person.node_id] = [personX, personY];
     });
