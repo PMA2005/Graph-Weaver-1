@@ -1,4 +1,5 @@
-import { User, Folder } from 'lucide-react';
+import { User, Folder, Orbit, Sparkles } from 'lucide-react';
+import type { LayoutMode } from './Graph2DCanvas';
 
 interface LegendItem {
   type: string;
@@ -24,9 +25,11 @@ const RELATIONSHIP_COLORS: { type: string; label: string; color: string }[] = [
 interface GraphLegendProps {
   onFilterType?: (type: string | null) => void;
   activeFilter?: string | null;
+  layoutMode?: LayoutMode;
+  onLayoutChange?: (mode: LayoutMode) => void;
 }
 
-export default function GraphLegend({ onFilterType, activeFilter }: GraphLegendProps) {
+export default function GraphLegend({ onFilterType, activeFilter, layoutMode = 'force', onLayoutChange }: GraphLegendProps) {
   return (
     <div 
       className="absolute bottom-0 left-0 right-0 z-40"
@@ -67,6 +70,38 @@ export default function GraphLegend({ onFilterType, activeFilter }: GraphLegendP
               </button>
             );
           })}
+        </div>
+
+        <div className="w-px h-6 bg-cyan-500/30" />
+
+        <div className="flex items-center gap-2">
+          <span className="font-tech text-xs text-cyan-400 uppercase tracking-widest">
+            Layout
+          </span>
+          <button
+            onClick={() => onLayoutChange?.('force')}
+            className={`flex items-center gap-1 px-2 py-1 rounded border transition-all ${
+              layoutMode === 'force'
+                ? 'border-cyan-400 bg-cyan-500/10'
+                : 'border-transparent hover:border-cyan-500/30 hover:bg-cyan-500/5'
+            }`}
+            data-testid="button-layout-force"
+          >
+            <Orbit className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-xs text-gray-300 font-medium">Force</span>
+          </button>
+          <button
+            onClick={() => onLayoutChange?.('spiral')}
+            className={`flex items-center gap-1 px-2 py-1 rounded border transition-all ${
+              layoutMode === 'spiral'
+                ? 'border-cyan-400 bg-cyan-500/10'
+                : 'border-transparent hover:border-cyan-500/30 hover:bg-cyan-500/5'
+            }`}
+            data-testid="button-layout-spiral"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-xs text-gray-300 font-medium">Spiral</span>
+          </button>
         </div>
 
         <div className="w-px h-6 bg-cyan-500/30" />

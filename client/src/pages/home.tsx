@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import Graph2DCanvas from '@/components/Graph2DCanvas';
-import type { ViewMode } from '@/components/Graph2DCanvas';
+import type { ViewMode, LayoutMode } from '@/components/Graph2DCanvas';
 import NodeDetailsSidebar from '@/components/NodeDetailsSidebar';
 import GraphLegend from '@/components/GraphLegend';
 import TopNavigation from '@/components/TopNavigation';
@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('global');
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
   const [showHelp, setShowHelp] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showAddNode, setShowAddNode] = useState(false);
@@ -348,6 +349,7 @@ export default function Home() {
               selectedNodeIds={selectedNodeIds}
               onNodeSelect={handleNodeSelect}
               viewMode={viewMode}
+              layoutMode={layoutMode}
               focusedNodes={focusedSubgraph.nodes}
               focusedEdges={focusedSubgraph.edges}
               onResetView={handleResetView}
@@ -383,6 +385,8 @@ export default function Home() {
       <GraphLegend
         onFilterType={setTypeFilter}
         activeFilter={typeFilter}
+        layoutMode={layoutMode}
+        onLayoutChange={setLayoutMode}
       />
 
       {showHelp && (

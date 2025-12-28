@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import * as d3Force from 'd3-force';
 
-type ViewMode = 'global' | 'focused';
+export type ViewMode = 'global' | 'focused';
+export type LayoutMode = 'force' | 'spiral';
 
 interface GraphNode {
   node_id: string;
@@ -24,6 +25,7 @@ interface Graph2DCanvasProps {
   selectedNodeIds?: Set<string>;
   onNodeSelect: (node: GraphNode | null, multiSelect?: boolean | { ctrlKey?: boolean; metaKey?: boolean }) => void;
   viewMode: ViewMode;
+  layoutMode?: LayoutMode;
   focusedNodes: GraphNode[];
   focusedEdges: GraphEdge[];
   onResetView: () => void;
@@ -233,6 +235,60 @@ function useForceSimulation2D(
   return positions;
 }
 
+// Spiral layout with golden angle distribution
+function useSpiralLayout(
+  nodes: GraphNode[],
+  width: number,
+  height: number
+): Record<string, [number, number]> {
+  return useMemo(() => {
+    if (nodes.length === 0 || width === 0 || height === 0) return {};
+
+    const legendHeight = 80;
+    const availableHeight = height - legendHeight;
+    const centerX = width / 2;
+    const centerY = availableHeight / 2;
+
+    // Separate by type - projects inner, persons outer
+    const projects = nodes.filter(n => n.node_type.toLowerCase() === 'project');
+    const persons = nodes.filter(n => n.node_type.toLowerCase() === 'person');
+
+    const positions: Record<string, [number, number]> = {};
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5 degrees
+
+    // Calculate spiral positions for a group
+    const placeInSpiral = (
+      nodeList: GraphNode[],
+      baseRadius: number,
+      spacing: number
+    ) => {
+      nodeList.forEach((node, i) => {
+        const angle = i * goldenAngle;
+        const radius = baseRadius + spacing * Math.sqrt(i);
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        positions[node.node_id] = [x, y];
+      });
+    };
+
+    // Projects in inner spiral (smaller radius)
+    const innerBaseRadius = 60;
+    const innerSpacing = 35;
+    placeInSpiral(projects, innerBaseRadius, innerSpacing);
+
+    // Calculate outer spiral start to not overlap
+    const maxProjectRadius = projects.length > 0 
+      ? innerBaseRadius + innerSpacing * Math.sqrt(projects.length - 1) + 80
+      : 60;
+
+    // Persons in outer spiral
+    const outerSpacing = 40;
+    placeInSpiral(persons, maxProjectRadius, outerSpacing);
+
+    return positions;
+  }, [nodes, width, height]);
+}
+
 export default function Graph2DCanvas({
   nodes,
   edges,
@@ -240,6 +296,7 @@ export default function Graph2DCanvas({
   selectedNodeIds = new Set(),
   onNodeSelect,
   viewMode,
+  layoutMode = 'force',
   focusedNodes = [],
   focusedEdges = [],
   onResetView,
@@ -287,7 +344,9 @@ export default function Graph2DCanvas({
     return connected;
   }, [edges, selectedNodeIds]);
 
-  const positions = useForceSimulation2D(displayNodes, displayEdges, true, dimensions.width, dimensions.height);
+  const forcePositions = useForceSimulation2D(displayNodes, displayEdges, layoutMode === 'force', dimensions.width, dimensions.height);
+  const spiralPositions = useSpiralLayout(displayNodes, dimensions.width, dimensions.height);
+  const positions = layoutMode === 'force' ? forcePositions : spiralPositions;
 
   const isFocusMode = viewMode === 'focused' && focusedNodes.length > 0;
   const lastFocusedIdsRef = useRef<string>('');
@@ -716,4 +775,4 @@ export default function Graph2DCanvas({
   );
 }
 
-export type { GraphNode, GraphEdge, ViewMode };
+export type { GraphNode, GraphEdge };
