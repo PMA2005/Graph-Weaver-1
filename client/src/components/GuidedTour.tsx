@@ -82,14 +82,12 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
 
   const step = tourSteps[currentStep];
   const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === tourSteps.length - 1;
 
   // Reset step when tour opens
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(0);
       setTargetRect(null);
-      // Small delay to ensure UI is ready
       const timer = setTimeout(() => setIsReady(true), 100);
       return () => clearTimeout(timer);
     } else {
@@ -97,51 +95,56 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     }
   }, [isOpen]);
 
-  const updateTargetPosition = useCallback(() => {
-    if (step.targetSelector) {
-      const element = document.querySelector(step.targetSelector);
-      if (element) {
-        setTargetRect(element.getBoundingClientRect());
-      } else {
-        setTargetRect(null);
-      }
-    } else {
-      setTargetRect(null);
-    }
-  }, [step.targetSelector]);
-
-  // Update target position with delay to prevent glitching
+  // Try to find and highlight target element (non-blocking)
   useEffect(() => {
     if (!isOpen || !isReady) return;
     
-    // Clear previous rect immediately to prevent stale positions
     setTargetRect(null);
     
-    // Delay finding the new element to allow DOM to settle
-    const timer = setTimeout(() => {
-      updateTargetPosition();
-    }, 50);
-    
-    window.addEventListener('resize', updateTargetPosition);
-    window.addEventListener('scroll', updateTargetPosition);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', updateTargetPosition);
-      window.removeEventListener('scroll', updateTargetPosition);
+    const findElement = () => {
+      if (step?.targetSelector) {
+        const element = document.querySelector(step.targetSelector);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            setTargetRect(rect);
+            return true;
+          }
+        }
+      }
+      return false;
     };
-  }, [isOpen, isReady, currentStep, updateTargetPosition]);
 
+    // Try immediately and with retries
+    const timer1 = setTimeout(findElement, 50);
+    const timer2 = setTimeout(findElement, 150);
+    const timer3 = setTimeout(findElement, 300);
+    
+    const handleResize = () => findElement();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleResize);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize);
+    };
+  }, [isOpen, isReady, currentStep, step?.targetSelector]);
+
+  // Navigation handlers - completely independent of DOM state
   const handleNext = () => {
-    if (step.isFinal) {
+    if (step?.isFinal) {
       onComplete();
-    } else {
-      setCurrentStep(prev => prev + 1);
+    } else if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrev = () => {
-    if (!isFirstStep) {
-      setCurrentStep(prev => prev - 1);
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -149,7 +152,7 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
     onClose();
   };
 
-  if (!isOpen || !isReady) return null;
+  if (!isOpen || !isReady || !step) return null;
 
   const getTooltipPosition = (): React.CSSProperties => {
     const isMobile = window.innerWidth < 640;

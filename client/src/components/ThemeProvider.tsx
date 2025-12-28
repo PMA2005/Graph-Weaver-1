@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, forwardRef } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -60,22 +60,26 @@ export function useTheme() {
   return context;
 }
 
-export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  
-  return (
-    <Button
-      size="icon"
-      variant="ghost"
-      onClick={toggleTheme}
-      className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
-      data-testid="button-theme-toggle"
-    >
-      {theme === 'dark' ? (
-        <Sun className="w-4 h-4" />
-      ) : (
-        <Moon className="w-4 h-4" />
-      )}
-    </Button>
-  );
-}
+export const ThemeToggle = forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<typeof Button>>(
+  function ThemeToggle(props, ref) {
+    const { theme, toggleTheme } = useTheme();
+    
+    return (
+      <Button
+        ref={ref}
+        size="icon"
+        variant="ghost"
+        onClick={toggleTheme}
+        className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+        data-testid="button-theme-toggle"
+        {...props}
+      >
+        {theme === 'dark' ? (
+          <Sun className="w-4 h-4" />
+        ) : (
+          <Moon className="w-4 h-4" />
+        )}
+      </Button>
+    );
+  }
+);
