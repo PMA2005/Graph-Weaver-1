@@ -35,13 +35,30 @@ export default function TopNavigation({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Filter nodes based on search query
+  // Filter and sort nodes based on search query (Google-style ranking)
   const suggestions = searchQuery.length > 0
-    ? nodes.filter(node => 
-        node.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.node_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.node_id.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 8)
+    ? nodes
+        .filter(node => 
+          node.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          node.node_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          node.node_id.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+          const query = searchQuery.toLowerCase();
+          const aName = a.display_name.toLowerCase();
+          const bName = b.display_name.toLowerCase();
+          
+          const aStartsWith = aName.startsWith(query);
+          const bStartsWith = bName.startsWith(query);
+          
+          // Names starting with query come first
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          // Within same category, sort alphabetically
+          return aName.localeCompare(bName);
+        })
+        .slice(0, 8)
     : [];
 
   // Close suggestions when clicking outside
