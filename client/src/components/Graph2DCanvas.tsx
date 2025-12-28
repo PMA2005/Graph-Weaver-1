@@ -241,8 +241,7 @@ function useSpiralLayout(
   width: number,
   height: number
 ): Record<string, [number, number]> {
-  const [positions, setPositions] = useState<Record<string, [number, number]>>({});
-  const basePositionsRef = useRef<Record<string, [number, number]>>({});
+  const [animatedPositions, setAnimatedPositions] = useState<Record<string, [number, number]>>({});
   const animationRef = useRef<number | null>(null);
   const timeRef = useRef(0);
 
@@ -291,7 +290,6 @@ function useSpiralLayout(
       
       // Distribute persons in multiple arcs
       const nodesPerArc = Math.ceil(Math.sqrt(personCount) * 2);
-      const arcCount = Math.ceil(personCount / nodesPerArc);
       
       persons.forEach((node, i) => {
         const arcIndex = Math.floor(i / nodesPerArc);
@@ -320,32 +318,39 @@ function useSpiralLayout(
 
   // Animation loop for floating effect
   useEffect(() => {
-    if (Object.keys(basePositions).length === 0) return;
+    if (Object.keys(basePositions).length === 0) {
+      setAnimatedPositions({});
+      return;
+    }
 
-    basePositionsRef.current = basePositions;
+    // Initialize with base positions immediately
+    setAnimatedPositions(basePositions);
 
     const animate = () => {
-      timeRef.current += 0.008; // Slower for smoother motion
+      timeRef.current += 0.012; // Smooth animation speed
       const time = timeRef.current;
       
       const newPositions: Record<string, [number, number]> = {};
+      const nodeIds = Object.keys(basePositions);
       
-      Object.entries(basePositionsRef.current).forEach(([id, [baseX, baseY]], index) => {
+      nodeIds.forEach((id, index) => {
+        const [baseX, baseY] = basePositions[id];
         // Unique phase for each node based on index
         const phase = (index * 0.7) % (Math.PI * 2);
-        const amplitude = 10; // Larger amplitude for more visible movement
+        const amplitude = 15; // Bigger amplitude for more visible movement
         
         // Smooth orbital floating motion (like force layout)
-        const dx = Math.sin(time + phase) * amplitude + Math.sin(time * 0.5 + phase * 1.5) * amplitude * 0.3;
-        const dy = Math.cos(time * 0.7 + phase * 1.3) * amplitude * 0.8 + Math.cos(time * 0.3 + phase) * amplitude * 0.2;
+        const dx = Math.sin(time + phase) * amplitude + Math.sin(time * 0.4 + phase * 1.5) * amplitude * 0.4;
+        const dy = Math.cos(time * 0.6 + phase * 1.3) * amplitude * 0.9 + Math.cos(time * 0.25 + phase) * amplitude * 0.3;
         
         newPositions[id] = [baseX + dx, baseY + dy];
       });
       
-      setPositions(newPositions);
+      setAnimatedPositions(newPositions);
       animationRef.current = requestAnimationFrame(animate);
     };
 
+    // Start animation immediately
     animationRef.current = requestAnimationFrame(animate);
 
     return () => {
@@ -355,7 +360,8 @@ function useSpiralLayout(
     };
   }, [basePositions]);
 
-  return positions;
+  // Return animated positions, or base positions if animation hasn't started
+  return Object.keys(animatedPositions).length > 0 ? animatedPositions : basePositions;
 }
 
 export default function Graph2DCanvas({
