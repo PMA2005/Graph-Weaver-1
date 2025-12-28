@@ -1,8 +1,9 @@
-import { X, MousePointer2, Move, ZoomIn, RotateCcw } from 'lucide-react';
+import { X, MousePointer2, Move, ZoomIn, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HelpOverlayProps {
   onClose: () => void;
+  onStartTour?: () => void;
 }
 
 const HELP_ITEMS = [
@@ -28,7 +29,7 @@ const HELP_ITEMS = [
   },
 ];
 
-export default function HelpOverlay({ onClose }: HelpOverlayProps) {
+export default function HelpOverlay({ onClose, onStartTour }: HelpOverlayProps) {
   return (
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center p-8"
@@ -92,7 +93,18 @@ export default function HelpOverlay({ onClose }: HelpOverlayProps) {
           ))}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 flex items-center justify-center gap-3">
+          {onStartTour && (
+            <Button
+              onClick={onStartTour}
+              variant="outline"
+              className="px-6 border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+              data-testid="button-start-tour"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Take Guided Tour
+            </Button>
+          )}
           <Button
             onClick={onClose}
             className="px-8 bg-cyan-500/20 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/30"

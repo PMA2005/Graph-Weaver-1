@@ -7,6 +7,7 @@ import NodeDetailsSidebar from '@/components/NodeDetailsSidebar';
 import GraphLegend from '@/components/GraphLegend';
 import TopNavigation from '@/components/TopNavigation';
 import HelpOverlay from '@/components/HelpOverlay';
+import GuidedTour from '@/components/GuidedTour';
 import LoadingScreen from '@/components/LoadingScreen';
 import AddNodeModal from '@/components/AddNodeModal';
 import EditNodeModal from '@/components/EditNodeModal';
@@ -22,6 +23,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('global');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
   const [showHelp, setShowHelp] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [showAddNode, setShowAddNode] = useState(false);
   const [showEditNode, setShowEditNode] = useState(false);
@@ -86,11 +88,15 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const hasVisited = localStorage.getItem('graphVisitorHelp');
-    if (!hasVisited) {
-      setShowHelp(true);
-      localStorage.setItem('graphVisitorHelp', 'true');
+    const hasCompletedTour = localStorage.getItem('graphTourCompleted');
+    if (!hasCompletedTour) {
+      setShowTour(true);
     }
+  }, []);
+
+  const handleTourComplete = useCallback(() => {
+    localStorage.setItem('graphTourCompleted', 'true');
+    setShowTour(false);
   }, []);
 
   const addNodeMutation = useMutation({
@@ -395,8 +401,20 @@ export default function Home() {
       />
 
       {showHelp && (
-        <HelpOverlay onClose={() => setShowHelp(false)} />
+        <HelpOverlay 
+          onClose={() => setShowHelp(false)} 
+          onStartTour={() => {
+            setShowHelp(false);
+            setShowTour(true);
+          }}
+        />
       )}
+
+      <GuidedTour
+        isOpen={showTour}
+        onClose={() => setShowTour(false)}
+        onComplete={handleTourComplete}
+      />
 
       {showAddNode && (
         <AddNodeModal

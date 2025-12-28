@@ -743,7 +743,7 @@ export default function Graph2DCanvas({
         </g>
 
         {/* Zoom controls and info */}
-        <g>
+        <g data-testid="zoom-controls">
           {/* Info box */}
           <rect
             x={10}

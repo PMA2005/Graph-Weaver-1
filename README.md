@@ -44,7 +44,8 @@ Available as both a web application and portable desktop apps for Windows and ma
 - **Details Sidebar** - View and edit node details with directional relationship information (incoming/outgoing)
 - **Connection Management** - Add and remove relationships from the sidebar
 - **Smart Relationship Updates** - Adding a relationship between already-connected nodes updates the existing connection
-- **Help Overlay** - First-time instructions that fully hide the graph for readability
+- **Guided Tour** - Interactive step-by-step walkthrough highlighting key features for new users
+- **Help Overlay** - Quick reference for navigation controls with option to restart guided tour
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
 
 ## Usage Guide

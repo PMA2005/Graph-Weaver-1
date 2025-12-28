@@ -38,7 +38,7 @@ export default function GraphLegend({ onFilterType, activeFilter, layoutMode = '
         borderTop: '2px solid rgba(0, 255, 255, 0.3)',
         boxShadow: '0 -4px 30px rgba(0, 255, 255, 0.1)',
       }}
-      data-testid="legend-bar"
+      data-testid="graph-legend"
     >
       <div className="flex items-center justify-center gap-6 px-4 py-2">
         <div className="flex items-center gap-4">

@@ -23,7 +23,8 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 │   │   ├── GraphLegend.tsx          # Color legend for node types and edge relationships
 │   │   ├── TopNavigation.tsx        # Header with search bar, add node button and theme toggle
 │   │   ├── ThemeProvider.tsx        # Dark mode toggle with localStorage persistence
-│   │   ├── HelpOverlay.tsx          # Help modal for new users (opaque background)
+│   │   ├── HelpOverlay.tsx          # Help modal with navigation tips and tour restart option
+│   │   ├── GuidedTour.tsx           # Interactive step-by-step onboarding tour
 │   │   ├── LoadingScreen.tsx        # Loading animation
 │   │   ├── AddNodeModal.tsx         # Modal for creating new nodes
 │   │   ├── AddEdgeModal.tsx         # Modal for creating new edges (alphabetically sorted dropdowns)
@@ -92,9 +93,11 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 - **Smart Relationship Updates**: Adding relationship between connected nodes updates existing connection
 - **Alphabetical Dropdowns**: People/projects sorted for easy finding
 - **Dark Mode Toggle**: System preference detection with manual override
-- **Help Overlay**: First-time user instructions
+- **Guided Tour**: Interactive step-by-step walkthrough for new users
+- **Help Overlay**: Quick reference with option to restart tour
 
 ## Recent Changes
+- Added guided tour feature with step-by-step walkthrough highlighting key UI elements for new users
 - Added search bar to TopNavigation with autocomplete dropdown for finding nodes by name/type
 - Implemented dual layout modes: Force-directed and Spiral with toggle buttons in legend
 - Spiral layout positions projects in curved rows at top, persons in arc pattern at bottom

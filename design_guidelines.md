@@ -200,11 +200,20 @@
 ## Non-Technical User Considerations
 - Prominent legend explaining colors/shapes
 - Tooltips on hover explaining controls
-- "Help" overlay with visual guide on first load
+- Interactive guided tour for first-time users with step-by-step highlights
+- "Help" overlay with visual guide and option to restart tour
 - Simple language in all UI text
 - Alphabetically sorted dropdowns for easy finding
 - Directional relationship display (incoming vs outgoing)
 - Confirmation dialogs before destructive actions
+
+## Guided Tour Design
+- **Overlay**: Dark semi-transparent backdrop (85% opacity) with spotlight on target elements
+- **Spotlight**: Cyan border glow around highlighted element (box-shadow cutout effect)
+- **Tooltip**: Sci-fi styled card with gradient background, cyan border, and glow effect
+- **Navigation**: Progress dots, Back/Next buttons, Skip option
+- **Steps**: Welcome, Search Bar, Graph Nodes, Legend/Layout, Zoom Controls, Focus Mode
+- **Trigger**: Automatically shows for first-time users, accessible via Help overlay
 
 ## Images
 No images required - SVG rendered graphics serve as the primary visual content. The sci-fi aesthetic is achieved entirely through SVG filters, glow effects, and CSS treatments.
