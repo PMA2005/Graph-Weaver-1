@@ -220,8 +220,8 @@ export default function GuidedTour({ isOpen, onClose, onComplete }: GuidedTourPr
         }}
       />
 
-      {/* Spotlight on target element */}
-      {targetRect && step.position !== 'center' && (
+      {/* Spotlight on target element - show whenever target exists */}
+      {targetRect && (
         <div
           className="absolute pointer-events-none"
           style={{
