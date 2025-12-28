@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
 import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ export default function TopNavigation({
 }: TopNavigationProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Filter and sort nodes based on search query (Google-style ranking)
@@ -72,10 +73,45 @@ export default function TopNavigation({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Reset highlighted index when suggestions change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [suggestions.length, searchQuery]);
+
   const handleSelectNode = (node: GraphNode) => {
     onNodeSelect?.(node);
     setSearchQuery('');
     setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+          handleSelectNode(suggestions[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        break;
+    }
   };
 
   return (
@@ -124,6 +160,7 @@ export default function TopNavigation({
               setShowSuggestions(true);
             }}
             onFocus={() => setShowSuggestions(true)}
+            onKeyDown={handleKeyDown}
             className="pl-10 bg-slate-900/80 border-cyan-500/30 text-white placeholder:text-cyan-400/40 focus:border-cyan-400 focus:ring-cyan-400/20"
             data-testid="input-search"
           />
@@ -140,11 +177,16 @@ export default function TopNavigation({
             }}
             data-testid="search-suggestions"
           >
-            {suggestions.map((node) => (
+            {suggestions.map((node, index) => (
               <button
                 key={node.node_id}
                 onClick={() => handleSelectNode(node)}
-                className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors hover:bg-cyan-500/10"
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={`w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors ${
+                  index === highlightedIndex 
+                    ? 'bg-cyan-500/20' 
+                    : 'hover:bg-cyan-500/10'
+                }`}
                 data-testid={`search-result-${node.node_id}`}
               >
                 <div 
