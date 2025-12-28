@@ -36,7 +36,7 @@ Available as both a web application and portable desktop apps for Windows and ma
 - **SQLite Database** - Persistent data storage with included sample data
 
 ### User Interface
-- **Search Bar** - Find people and projects by name or type with autocomplete suggestions
+- **Search Bar** - Find people and projects with Google-style ranking (names starting with query first, then containing matches)
 - **Dark Mode Toggle** - Switch between light and dark themes with automatic system preference detection
 - **Dual Layout Modes** - Force-directed (dynamic) and Spiral (stratified) layouts with toggle in legend
 - **Semi-transparent UI** - Graph remains visible behind modals and sidebar
@@ -44,7 +44,7 @@ Available as both a web application and portable desktop apps for Windows and ma
 - **Details Sidebar** - View and edit node details with directional relationship information (incoming/outgoing)
 - **Connection Management** - Add and remove relationships from the sidebar
 - **Smart Relationship Updates** - Adding a relationship between already-connected nodes updates the existing connection
-- **Guided Tour** - Interactive step-by-step walkthrough highlighting key features for new users
+- **Guided Tour** - Interactive 7-step walkthrough with spotlights highlighting key UI elements for new users
 - **Help Overlay** - Quick reference for navigation controls with option to restart guided tour
 - **Portable Desktop Apps** - Zero-install executables for Windows and macOS
 

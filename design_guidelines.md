@@ -60,7 +60,8 @@
 
 **Search Bar**:
 - Input with search icon, placeholder "Search people & projects..."
-- Autocomplete dropdown showing matching nodes with type icons
+- Google-style ranking: names starting with query appear first, then names containing query
+- Autocomplete dropdown showing matching nodes (both people and projects) with type icons
 - Cyan styling matching sci-fi theme
 - Selecting a result focuses on that node and clears any type filter
 
@@ -217,11 +218,11 @@
 - **Focus Overlay**: Full-width on mobile, centered on desktop
 
 ## Guided Tour Design
-- **Overlay**: Dark semi-transparent backdrop (85% opacity) with spotlight on target elements
-- **Spotlight**: Cyan border glow around highlighted element (box-shadow cutout effect)
-- **Tooltip**: Sci-fi styled card with gradient background, cyan border, and glow effect
-- **Navigation**: Progress dots, Back/Next buttons, Skip option
-- **Steps**: Welcome, Search Bar, Graph Nodes, Legend/Layout, Zoom Controls, Focus Mode
+- **Overlay**: Dark semi-transparent backdrop (60% opacity) with pointer-events disabled for click-through
+- **Spotlight**: Cyan border glow around highlighted element (shows for all steps with target elements)
+- **Tooltip**: Sci-fi styled card with gradient background, cyan border, glow effect, pointer-events enabled
+- **Navigation**: Progress dots, Back/Next buttons, Skip option (all 7 steps fully navigable)
+- **Steps**: Welcome, Search Bar, Graph Nodes, Layout Controls, Pan & Zoom, Focus View, Tour Complete
 - **Trigger**: Automatically shows for first-time users, accessible via Help overlay
 
 ## Images

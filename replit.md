@@ -97,6 +97,9 @@ This app reads from a SQLite database (graph2_1765932308440.db) containing nodes
 - **Help Overlay**: Quick reference with option to restart tour
 
 ## Recent Changes
+- Improved search with Google-style ranking: results starting with query appear first, then results containing query elsewhere
+- Fixed guided tour navigation to work on all 7 steps (pointer-events fix for centered tooltips)
+- Tour spotlights now highlight target elements (Search, Nodes, Layout, Zoom) regardless of tooltip position
 - Added mobile responsiveness for all screen sizes (phones, tablets, desktops)
   - Header adapts with compact layout on phones
   - Sidebar becomes full-screen overlay on mobile with backdrop
