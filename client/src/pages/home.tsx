@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import Graph2DCanvas from '@/components/Graph2DCanvas';
@@ -15,6 +15,7 @@ import AddEdgeModal from '@/components/AddEdgeModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import FocusOverlay from '@/components/FocusOverlay';
 import HistoryModal from '@/components/HistoryModal';
+import ShareModal from '@/components/ShareModal';
 import { useToast } from '@/hooks/use-toast';
 import type { GraphData, GraphNode, GraphEdge } from '@shared/schema';
 
@@ -30,8 +31,10 @@ export default function Home() {
   const [showEditNode, setShowEditNode] = useState(false);
   const [showAddEdge, setShowAddEdge] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'node' | 'edge'; item: GraphNode | GraphEdge } | null>(null);
   const [graphKey, setGraphKey] = useState(0);
+  const svgRef = useRef<SVGSVGElement>(null);
   const { toast } = useToast();
 
   const toggleNodeSelection = useCallback((node: GraphNode, multiSelect: boolean = false) => {
@@ -344,7 +347,7 @@ export default function Home() {
     );
   }
 
-  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || showHistory || !!deleteTarget || showHelp;
+  const isAnyModalOpen = showAddNode || showEditNode || showAddEdge || showHistory || showShare || !!deleteTarget || showHelp;
 
   return (
     <div className="fixed inset-0 overflow-hidden" data-testid="page-home">
@@ -356,6 +359,7 @@ export default function Home() {
         onSettings={() => toast({ title: 'Settings', description: 'Settings panel coming soon' })}
         onAddNode={() => setShowAddNode(true)}
         onHistory={() => setShowHistory(true)}
+        onShare={() => setShowShare(true)}
         nodes={nodes}
         onNodeSelect={(node) => {
           setTypeFilter(null); // Clear type filter so searched node is visible
@@ -378,6 +382,7 @@ export default function Home() {
               focusedNodes={focusedSubgraph.nodes}
               focusedEdges={focusedSubgraph.edges}
               onResetView={handleResetView}
+              svgRef={svgRef}
             />
           )}
         </div>
@@ -484,6 +489,15 @@ export default function Home() {
             clearSelection();
             toast({ title: 'Restored', description: 'Data has been restored from snapshot' });
           }}
+        />
+      )}
+
+      {showShare && (
+        <ShareModal
+          onClose={() => setShowShare(false)}
+          nodes={nodes}
+          edges={edges}
+          svgRef={svgRef}
         />
       )}
     </div>

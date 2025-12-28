@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react';
-import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban, History } from 'lucide-react';
+import { RotateCcw, Download, Upload, Settings, HelpCircle, Network, Plus, Search, User, FolderKanban, History, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +18,7 @@ interface TopNavigationProps {
   onSettings?: () => void;
   onAddNode?: () => void;
   onHistory?: () => void;
+  onShare?: () => void;
   nodes?: GraphNode[];
   onNodeSelect?: (node: GraphNode) => void;
 }
@@ -30,6 +31,7 @@ export default function TopNavigation({
   onSettings,
   onAddNode,
   onHistory,
+  onShare,
   nodes = [],
   onNodeSelect,
 }: TopNavigationProps) {
@@ -312,6 +314,21 @@ export default function TopNavigation({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Data History</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onShare}
+              className="text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10"
+              data-testid="button-share"
+            >
+              <Share2 className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Export / Share</TooltipContent>
         </Tooltip>
 
         <Tooltip>

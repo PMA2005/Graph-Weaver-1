@@ -29,6 +29,7 @@ interface Graph2DCanvasProps {
   focusedNodes: GraphNode[];
   focusedEdges: GraphEdge[];
   onResetView: () => void;
+  svgRef?: React.RefObject<SVGSVGElement>;
 }
 
 const NODE_TYPE_COLORS: Record<string, string> = {
@@ -401,6 +402,7 @@ export default function Graph2DCanvas({
   focusedNodes = [],
   focusedEdges = [],
   onResetView,
+  svgRef,
 }: Graph2DCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -595,6 +597,7 @@ export default function Graph2DCanvas({
       }}
     >
       <svg
+        ref={svgRef}
         width={dimensions.width}
         height={dimensions.height}
         style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
