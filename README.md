@@ -99,71 +99,76 @@ Available as both a web application and portable desktop apps for Windows and ma
    macOS may display a warning saying the app is damaged or cannot be opened. This is expected.
 
 # Method 1: Use “Open Anyway” (Recommended)
+### macOS
+
+1. Download the project ZIP file: `graph-weaver-mac.zip` (this file will be provided)
+
+2. Extract the ZIP file by double-clicking it in Finder
+
+3. Open Graph Weaver - macOS may display a warning saying the app is damaged or cannot be opened. This is expected. Follow one of the methods below:
+
+#### Method 1: Use "Open Anyway" (Recommended)
 
 Immediately after seeing the warning:
 
-Click Cancel or Done
-(do not repeatedly try to reopen the app)
+1. Click **Cancel** or **Done** (do not repeatedly try to reopen the app)
 
-Open System Settings (or System Preferences on older macOS).
+2. Open **System Settings** (or System Preferences on older macOS)
 
-Go to Privacy & Security and scroll to the bottom.
+3. Go to **Privacy & Security** and scroll to the bottom
 
-Look for a message saying “Graph Weaver was blocked from use”, then click Open Anyway.
+4. Look for a message saying "Graph Weaver was blocked from use", then click **Open Anyway**
+   
+   **Note:** This option only appears for about one hour after the block occurs.
 
-⚠️ This option only appears for about one hour after the block occurs.
+5. Unlock the padlock if prompted and enter your administrator password
 
-Unlock the padlock if prompted and enter your administrator password.
-
-When the final warning appears, click Open.
+6. When the final warning appears, click **Open**
 
 After this, macOS will remember your choice and the app will open normally in the future.
 
-Method 2: Terminal Fallback (If “Open Anyway” Does Not Appear)
+#### Method 2: Terminal Fallback (If "Open Anyway" Does Not Appear)
 
-⚠️ Only use this method if you trust the source of the application.
+**Note:** Only use this method if you trust the source of the application.
 
-Open Terminal:
+1. Open **Terminal**: Applications > Utilities > Terminal
 
-Applications → Utilities → Terminal
+2. Type the following command (do not press Enter yet):
+   ```bash
+   sudo xattr -cr 
+   ```
 
+3. Drag `Graph Weaver.app` into the Terminal window to auto-fill the file path
 
-Type the following command (do not press Enter yet):
+4. Press **Return**, then enter your administrator password (no characters will appear while typing - this is normal)
 
-sudo xattr -cr 
-
-
-Drag Graph Weaver.app into the Terminal window to auto-fill the file path.
-
-Press Return, then enter your administrator password
-(no characters will appear while typing — this is normal).
-
-Close Terminal and open Graph Weaver again.
+5. Close Terminal and open Graph Weaver again
 
 The app should now launch without being blocked.
 
-Development Setup
+#### Development Setup
 
-Open Terminal and navigate to the extracted project folder:
+1. Open **Terminal** and navigate to the extracted project folder:
+   ```bash
+   cd /path/to/extracted/folder
+   ls
+   cd Graph-Weaver-1
+   ```
 
-cd /path/to/extracted/folder
-ls
-cd Graph-Weaver-1
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-Install dependencies:
-
-npm install
-
-
-Start the development server:
-
-npm run dev
-
-
-Open your browser and go to:
-
-http://localhost:5000
+4. Open your browser to:
+   ```
+   http://localhost:5000
+   ```
 
 ### Windows
 
