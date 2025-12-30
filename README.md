@@ -91,13 +91,65 @@ Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
 
 ### macOS
 
-1. Download the project as a zip file from Replit
+1. Download the project from the zip file: "graph-weaver-mac.zip" this file will be provided. 
 
-2. Extract the zip file (double-click it)
+2. Extract the zip file (double-click it) in your Finder application on your Mac
 
 3. Open **Terminal** and navigate to the extracted project folder:
-   ```bash
-   cd ~/Downloads/Graph-Weaver-1
+   ```
+   Method 1: Make the “Open Anyway” Button Appear
+
+Follow these steps immediately after seeing the error message that says the app is damaged or cannot be opened:
+
+When the error popup appears, click Cancel or Done
+(do not keep retrying to open the app)
+
+Open System Settings (or System Preferences on older macOS)
+
+Navigate to Privacy & Security
+
+Scroll to the bottom of the page
+You should see a message stating that “Graph Weaver” was blocked from use, along with an “Open Anyway” button
+
+⚠️ This button only appears for about one hour after the app is blocked
+
+Click Open Anyway
+
+You may need to unlock the padlock and enter your administrator password
+
+When the final warning appears, click Open
+
+After this, macOS will remember your choice and you should be able to open the app normally by double-clicking it in the future.
+
+Method 2 (Fallback): Use Terminal to Remove the Quarantine Flag
+
+If the “Open Anyway” button never appears, you can manually tell macOS that you trust the app by removing its quarantine flag.
+
+⚠️ Only do this if you trust the source of the application.
+
+Steps
+
+Open Terminal
+
+Applications → Utilities → Terminal
+
+Type the following command (do not press Enter yet):
+
+sudo xattr -cr 
+
+
+Drag the Graph Weaver.app file into the Terminal window
+
+This will automatically add the correct file path
+
+Press Return
+
+Enter your administrator password
+(Nothing will appear while typing — this is normal)
+
+Close Terminal and open Graph Weaver again
+
+The app should now launch without macOS blocking it.
    ```
    
    **Note:** If you extracted to a different location, navigate there first:
