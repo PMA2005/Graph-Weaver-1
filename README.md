@@ -87,7 +87,7 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ### Prerequisites
 
-# Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
+**Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)**
 
 ### macOS Install
 
