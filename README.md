@@ -87,9 +87,18 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 ### Prerequisites
 
-Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
+# Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
 
-Method 1: Use “Open Anyway” (Recommended)
+### macOS Install
+
+**Download** The project ZIP file: graph-weaver-mac.zip (this file will be provided).
+
+**Extract** the ZIP file by double-clicking it in Finder.
+
+**Open Graph Weaver**
+   macOS may display a warning saying the app is damaged or cannot be opened. This is expected.
+
+# Method 1: Use “Open Anyway” (Recommended)
 
 Immediately after seeing the warning:
 
