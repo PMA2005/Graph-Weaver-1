@@ -89,90 +89,72 @@ Available as both a web application and portable desktop apps for Windows and ma
 
 Install Node.js version 20 or higher from [nodejs.org](https://nodejs.org)
 
-### macOS
+Method 1: Use “Open Anyway” (Recommended)
 
-1. Download the project from the zip file: "graph-weaver-mac.zip" this file will be provided. 
+Immediately after seeing the warning:
 
-2. Extract the zip file (double-click it) in your Finder application on your Mac
+Click Cancel or Done
+(do not repeatedly try to reopen the app)
 
-3. Open **Terminal** and navigate to the extracted project folder:
-   ```
-   Method 1: Make the “Open Anyway” Button Appear
+Open System Settings (or System Preferences on older macOS).
 
-Follow these steps immediately after seeing the error message that says the app is damaged or cannot be opened:
+Go to Privacy & Security and scroll to the bottom.
 
-When the error popup appears, click Cancel or Done
-(do not keep retrying to open the app)
+Look for a message saying “Graph Weaver was blocked from use”, then click Open Anyway.
 
-Open System Settings (or System Preferences on older macOS)
+⚠️ This option only appears for about one hour after the block occurs.
 
-Navigate to Privacy & Security
+Unlock the padlock if prompted and enter your administrator password.
 
-Scroll to the bottom of the page
-You should see a message stating that “Graph Weaver” was blocked from use, along with an “Open Anyway” button
+When the final warning appears, click Open.
 
-⚠️ This button only appears for about one hour after the app is blocked
+After this, macOS will remember your choice and the app will open normally in the future.
 
-Click Open Anyway
+Method 2: Terminal Fallback (If “Open Anyway” Does Not Appear)
 
-You may need to unlock the padlock and enter your administrator password
+⚠️ Only use this method if you trust the source of the application.
 
-When the final warning appears, click Open
-
-After this, macOS will remember your choice and you should be able to open the app normally by double-clicking it in the future.
-
-Method 2 (Fallback): Use Terminal to Remove the Quarantine Flag
-
-If the “Open Anyway” button never appears, you can manually tell macOS that you trust the app by removing its quarantine flag.
-
-⚠️ Only do this if you trust the source of the application.
-
-Steps
-
-Open Terminal
+Open Terminal:
 
 Applications → Utilities → Terminal
+
 
 Type the following command (do not press Enter yet):
 
 sudo xattr -cr 
 
 
-Drag the Graph Weaver.app file into the Terminal window
+Drag Graph Weaver.app into the Terminal window to auto-fill the file path.
 
-This will automatically add the correct file path
+Press Return, then enter your administrator password
+(no characters will appear while typing — this is normal).
 
-Press Return
+Close Terminal and open Graph Weaver again.
 
-Enter your administrator password
-(Nothing will appear while typing — this is normal)
+The app should now launch without being blocked.
 
-Close Terminal and open Graph Weaver again
+Development Setup
 
-The app should now launch without macOS blocking it.
-   ```
-   
-   **Note:** If you extracted to a different location, navigate there first:
-   ```bash
-   cd /path/to/extracted/folder
-   ls                          # See what's inside
-   cd Graph-Weaver-1           # Enter the project folder
-   ```
+Open Terminal and navigate to the extracted project folder:
 
-4. Install dependencies:
-   ```bash
-   npm install
-   ```
+cd /path/to/extracted/folder
+ls
+cd Graph-Weaver-1
 
-5. Start the development server:
-   ```bash
-   npm run dev
-   ```
 
-6. Open your browser to:
-   ```
-   http://localhost:5000
-   ```
+Install dependencies:
+
+npm install
+
+
+Start the development server:
+
+npm run dev
+
+
+Open your browser and go to:
+
+http://localhost:5000
 
 ### Windows
 
